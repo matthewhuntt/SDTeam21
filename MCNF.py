@@ -24,13 +24,25 @@ def csvReader(filename):
 
 def modeler(arcDict):
     m = Model("m")
-
+    varDict = {}
     for arc in arcDict:
         lowerBound = float(arcDict[arc][0])
         upperBound = float(arcDict[arc][1])
         cost = float(arcDict[arc][2])
         name = ''.join((''.join(arc[0]), ''.join(arc[1]), arc[2]))
-        m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
+        varDict[name] = m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
+
+    for node in nodeList:
+        inList = 0
+        outList = 0
+        for arc in arcDict:
+            if arc[1] == node:
+                inList.append(arc)
+            elif arc[0] == node:
+                outList.append(arc)
+
+        m.addConstr()
+
 
 #        m.optimize()
 
