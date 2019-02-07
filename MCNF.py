@@ -12,7 +12,8 @@ def csvReader(filename):
     arcDict = {}
     for row in rows[1:]:
         arcDict[((row[0], row[1], row[2]),(row[3], row[4], row[5]), row[6])] = (row[7], row[8], row[9])
-    return arcDict
+    nodeList = arcDict.keys()
+    return arcDict, nodeList
 
 def modeler(arcDict):
     m = Model("m")
@@ -27,8 +28,9 @@ def modeler(arcDict):
 
 
 def main(args):
-    arcDict = csvReader("MCNFData.csv")
+    arcDict, nodeList = csvReader("MCNFData.csv")
     print(arcDict)
+    print(nodeList)
     modeler(arcDict)
 
 
