@@ -24,6 +24,16 @@ def modeler(arcDict):
         name = ''.join((''.join(arc[0]), ''.join(arc[1]), arc[2]))
         m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
 
+#        m.optimize()
+        
+# Print solution
+#        if m.status == GRB.Status.OPTIMAL:
+#            solution = m.getAttr('x', flow)
+#            for h in commodities:
+#                print('\nOptimal flows for %s:' % h)
+#                for i,j in arcs:
+#                    if solution[h,i,j] > 0:
+#                        print('%s -> %s: %g' % (i, j, solution[h,i,j]))
 
 
 def main(args):
