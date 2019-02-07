@@ -11,23 +11,25 @@ def csvReader(filename):
             rows.append(row)
     arcDict = {}
     for row in rows[1:]:
-        arcDict[(row[0], row[1], row[2])] = (row[3], row[4], row[5])
+        arcDict[((row[0], row[1], row[2]),(row[3], row[4], row[5]), row[6])] = (row[7], row[8], row[9])
     return arcDict
 
 def modeler(arcDict):
     m = Model("m")
 
     for arc in arcDict:
-        lowerBound = arcDict[arc][0]
-        upperBound = arcDict[arc][1]
-        cost = arcDict[arc][2]
-        m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=arc)
+        lowerBound = float(arcDict[arc][0])
+        upperBound = float(arcDict[arc][1])
+        cost = float(arcDict[arc][2])
+        name = ''.join((''.join(arc[0]), ''.join(arc[1]), arc[2]))
+        m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
 
-    for
+
 
 def main(args):
-    print(csvReader("MCNFData.csv"))
-    modelr(arcDict)
+    arcDict = csvReader("MCNFData.csv")
+    print(arcDict)
+    modeler(arcDict)
 
 
 
