@@ -12,7 +12,14 @@ def csvReader(filename):
     arcDict = {}
     for row in rows[1:]:
         arcDict[((row[0], row[1], row[2]),(row[3], row[4], row[5]), row[6])] = (row[7], row[8], row[9])
-    nodeList = arcDict.keys()
+    nodeList = []
+    for arc in arcDict.keys():
+        fromNode = arc[0]
+        toNode = arc[1]
+        if fromNode not in nodeList:
+            nodeList.append(fromNode)
+        if toNode not in nodeList:
+            nodeList.append(toNode)
     return arcDict, nodeList
 
 def modeler(arcDict):
@@ -26,7 +33,7 @@ def modeler(arcDict):
         m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
 
 #        m.optimize()
-        
+
 # Print solution
 #        if m.status == GRB.Status.OPTIMAL:
 #            solution = m.getAttr('x', flow)
@@ -40,6 +47,7 @@ def modeler(arcDict):
 def main(args):
     arcDict, nodeList = csvReader("MCNFData.csv")
     print(arcDict)
+    print("\n\n")
     print(nodeList)
     modeler(arcDict)
 
