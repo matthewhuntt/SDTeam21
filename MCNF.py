@@ -22,29 +22,33 @@ def csvReader(filename):
             nodeList.append(toNode)
     return arcDict, nodeList
 
-def modeler(arcDict):
+def modeler(arcDict, nodeList):
     m = Model("m")
     varDict = {}
     for arc in arcDict:
         lowerBound = float(arcDict[arc][0])
         upperBound = float(arcDict[arc][1])
         cost = float(arcDict[arc][2])
-        name = ''.join((''.join(arc[0]), ''.join(arc[1]), arc[2]))
-        varDict[name] = m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
+        name = "(({}, {}, {}), ({}, {}, {}), {})".format(arc[0][0], arc[0][1], arc[0][2], arc[1][0], arc[1][1], arc[1][2], arc[2])
+        varDict[arc] = m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
+
+    print(varDict)
 
     for node in nodeList:
-        inList = 0
-        outList = 0
-        for arc in arcDict:
-            if arc[1] == node:
-                inList.append(arc)
-            elif arc[0] == node:
-                outList.append(arc)
+        if node[0] != "s" and node[0] != "t":
+            inDict = {}
+            outDict = {}
+            for arc in arcDict:
+                if arc[1] == node:
+                    inDict[arc] = varDict[arc]
+                elif arc[0] == node:
+                    outDict[arc] = varDict[arc]
+            inDict = tupledict(inDict)
+            outDict = tupledict(outDict)
+            m.addConstr(inDict.sum() == outDict.sum())
 
-        m.addConstr()
 
-
-#        m.optimize()
+    m.optimize()
 
 # Print solution
 #        if m.status == GRB.Status.OPTIMAL:
@@ -61,7 +65,7 @@ def main(args):
     print(arcDict)
     print("\n\n")
     print(nodeList)
-    modeler(arcDict)
+    modeler(arcDict, nodeList)
 
 
 
