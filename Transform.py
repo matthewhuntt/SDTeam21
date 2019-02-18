@@ -3,7 +3,7 @@ import csv
 import re
 import datetime
 
-def csvReader(filename):
+def setupDataReader(filename):
     with open(filename, "r") as f:
         reader = csv.reader(f)
         rows = []
@@ -23,6 +23,19 @@ def csvReader(filename):
         echelonDict[echelon] = datetimeReader(echelonDict[echelon])
     return (echelonDict, eventRoomList, itemList)
 
+def costDataReader(filename):
+    with open(filename, "r") as f:
+        reader = csv.reader(f)
+        rows = []
+        for row in reader:
+            rows.append(row)
+    costDict = {}
+    for rowIndex in range (1, len(rows)):
+        for columnIndex in range (1, len(rows)):
+            costDict[(rows[rowIndex][0], rows[0][columnIndex])] = rows[rowIndex][columnIndex]
+    return costDict
+
+
 def datetimeReader(date):
 
     searchObject = re.search("(\d{1,2})\/(\d{1,2})\/(\d{1,2}) (\d{1,2}):(\d{2})", date)
@@ -30,7 +43,7 @@ def datetimeReader(date):
     date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute))
     return date
 
-def constructor(echelonDict, eventRoomList, itemList):
+def constructor(echelonDict, eventRoomList, itemList, costDict):
     storageRoomList = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10"]
     allRoomList = eventRoomList + storageRoomList
     roomDict = {}
@@ -46,14 +59,23 @@ def constructor(echelonDict, eventRoomList, itemList):
                             if roomI == roomJ:
                                 arcDict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (0, 0, 0)
                         if ab == "b":
-                            arcDict[((roomI, echelon, "b"),(roomJ, echelon+ 1, "a"), item)] = (0, 0, 0)
+                            arcDict[((roomI, echelon, "b"),(roomJ, echelon+ 1, "a"), item)] = (0, 0, costDict[(roomDict[roomI], roomDict[roomJ])])
 
-    return arcDict
+    return arcDict, roomDict
+
+def labeler(arcDict):
+    return None
 
 def main(args):
-    (echelonDict, eventRoomList, itemList) = csvReader("SetupData.csv")
+    (echelonDict, eventRoomList, itemList) = setupDataReader("SetupData.csv")
+    costDict = costDataReader("CostData.csv")
+
+    print("\n\n")
+
+    #for room in eventRoomList:
+    #    print(room)
     #print(echelonDict)
-    arcDict = constructor(echelonDict, eventRoomList, itemList)
+    arcDict, roomDict = constructor(echelonDict, eventRoomList, itemList, costDict)
     #print(eventRoomList)
     #print(itemList)
     print(arcDict)
