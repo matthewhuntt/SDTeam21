@@ -49,7 +49,7 @@ def modeler(arcDict, nodeList, commodityList, roomDict):
 
     lagrangeDict = {}
     for room in roomDict.values():
-        if room[0] == s:
+        if room[0] == "s":
             lagrangeDict[room] = 0
 
 
@@ -93,7 +93,7 @@ def printSolution(m):
 
 
 def main(args):
-    arcDict, nodeList, commodityList = arcDataReader("MCNFDataTest.csv")
+    arcDict, nodeList, commodityList = arcDataReader("MCNFData.csv")
     roomDict = roomDictReader("RoomDictionary.csv")
     #print(arcDict)
     #print("\n\n")
