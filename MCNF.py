@@ -67,7 +67,7 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
                 for arc in arcDict: # Can cut by only looking at (a->b for that node for all coms)
                     if arc[1] == node and arc[2] == commodity:
                         vol_k.addTerm(commodityVolDict[commodity], arc)
-                vol_k.addConstr(-roomCapDict[node])
+                vol_k.addTerm(-roomCapDict[node])
                 p_i.addTerm(lagrangeDict[node], vol_k)
             objective.addTerm(1, p_i)
 
