@@ -3,7 +3,7 @@
 from gurobipy import *
 import csv
 
-def csvReader(filename):
+def arcDataReader(filename):
     with open(filename, "r") as f:
         reader = csv.reader(f)
         rows = []
@@ -26,7 +26,18 @@ def csvReader(filename):
             commodityList.append(commodity)
     return arcDict, nodeList, commodityList
 
-def modeler(arcDict, nodeList, commodityList):
+def roomDictReader(filename):
+    with open (filename, "r") as f:
+        reader = csv.reader(f)
+        rows = []
+        for row in reader:
+            rows.append(row)
+    roomDict = {}
+    for row in rows[1:]:
+        roomDict[row[0]] = row[1]
+    return roomDict
+
+def modeler(arcDict, nodeList, commodityList, roomDict):
     m = Model("m")
     varDict = {}
     for arc in arcDict:
@@ -36,11 +47,9 @@ def modeler(arcDict, nodeList, commodityList):
         name = "(({}, {}, {}), ({}, {}, {}), {})".format(arc[0][0], arc[0][1], arc[0][2], arc[1][0], arc[1][1], arc[1][2], arc[2])
         varDict[arc] = m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
 
-    #print(varDict)
-
+    for room in roomDict
 
     for commodity in commodityList:
-
         for node in nodeList:
             if node[0] != "s" and (node[0] != "t" and node[2] != "b"):
                 inDict = {}
@@ -80,12 +89,13 @@ def printSolution(m):
 
 
 def main(args):
-    arcDict, nodeList, commodityList = csvReader("MCNFData.csv")
+    arcDict, nodeList, commodityList = arcDataReader("MCNFDataTest.csv")
+    roomDict = roomDictReader("RoomDictionary.csv")
     #print(arcDict)
     #print("\n\n")
     #print(nodeList)
-    m = modeler(arcDict, nodeList, commodityList)
-    printSolution(m)
+    m = modeler(arcDict, nodeList, commodityList, roomDict)
+    #printSolution(m)
 
 
 
