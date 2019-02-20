@@ -39,7 +39,7 @@ def roomDictReader(filename):
             roomDict[row[0]] = row[1]
     return roomDict
 
-def modeler(arcDict, nodeList, commodityList, roomDict):
+def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVolDict):
     m = Model("m")
     varDict = {}
     for arc in arcDict:
@@ -53,6 +53,14 @@ def modeler(arcDict, nodeList, commodityList, roomDict):
     for room in roomDict.values():
         if room[0] == "S":
             lagrangeDict[room] = 0
+    for node in nodeList:
+        if ((node[0][0]) == "S" and node[2] == "b"):
+            for commodity in commodityList:
+                storageVarDict = {}
+                for arc in arcDict:
+                    if arc[1] == node and arc[2] == commodity:
+                        storageVarDict[arc] = varDict[arc]
+
 
     # print(lagrangeDict)
 
@@ -101,7 +109,10 @@ def main(args):
     #print(arcDict)
     #print("\n\n")
     #print(nodeList)
-    m = modeler(arcDict, nodeList, commodityList, roomDict)
+    #roomCapDict = {"S1": 100000, "S2": 100000, "S3": 100000, "S4": 100000, "S5": 100000, "S6": 100000, "S7": 100000, "S8": 100000, "S9": 100000, "S10": 100000}
+    roomCapDict = {"1": 10000}
+    commodityVolDict = {"1": 2, "2": 3}
+    m = modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVolDict)
     #printSolution(m)
 
 
