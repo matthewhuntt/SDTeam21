@@ -55,21 +55,27 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
             lagrangeDict[room] = 0
     # print(lagrangeDict)
 
-    objective = GRBLinExpr()
-    for x in varDict.values():
-        objective.addTerm(x.obj, x)
+    objective = LinExpr()
+    for var in varDict.values():
+        objective.add(var, var.getAttr(GRB.Attr.Obj))
+        # print("")
+        # print("")
+        # print("Var is of type " + str(type(var)))
+        # print("")
+        # print(var.lb)
+        # print(var.obj)
+        # print(var.getAttr(GRB.Attr.X))
 
-    for node in nodeList:
-        if ((node[0][0]) == "S" and node[2] == "b"):
-            p_i = GRBLinExpr()
-            for commodity in commodityList:
-                vol_k = GRBLinExpr()
-                for arc in arcDict: # Can cut by only looking at (a->b for that node for all coms)
-                    if arc[1] == node and arc[2] == commodity:
-                        vol_k.addTerm(commodityVolDict[commodity], arc)
-                vol_k.addTerm(-roomCapDict[node])
-                p_i.addTerm(lagrangeDict[node], vol_k)
-            objective.addTerm(1, p_i)
+    # p = LinExpr()
+    # for node in nodeList:
+    #     if ((node[0][0]) == "S" and node[2] == "b"):
+    #         vol_i = LinExpr()
+    #         for commodity in commodityList:
+    #             for arc in arcDict: # Can cut by only looking at (a->b for that node for all coms)
+    #                 if arc[1] == node and arc[2] == commodity:
+    #                     vol_i.addTerm(commodityVolDict[commodity], arc)
+    #         p.multAdd(lagrangeDict[node], vol_i)
+    # objective.add(p)
 
 
 
