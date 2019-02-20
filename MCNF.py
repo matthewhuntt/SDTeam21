@@ -53,16 +53,25 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
     for room in roomDict.values():
         if room[0] == "S":
             lagrangeDict[room] = 0
+    # print(lagrangeDict)
+
+    objective = GRBLinExpr()
+    for x in varDict.values():
+        objective.addTerm(x.obj, x)
+
     for node in nodeList:
         if ((node[0][0]) == "S" and node[2] == "b"):
+            p_i = GRBLinExpr()
             for commodity in commodityList:
-                storageVarDict = {}
-                for arc in arcDict:
+                vol_k = GRBLinExpr()
+                for arc in arcDict: # Can cut by only looking at (a->b for that node for all coms)
                     if arc[1] == node and arc[2] == commodity:
-                        storageVarDict[arc] = varDict[arc]
+                        vol_k.addTerm(commodityVolDict[commodity], arc)
+                vol_k.addConstr(-roomCapDict[node])
+                p_i.addTerm(lagrangeDict[node], vol_k)
+            objective.addTerm(1, p_i)
 
 
-    # print(lagrangeDict)
 
     for commodity in commodityList:
         for node in nodeList:
@@ -79,7 +88,8 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
                 m.addConstr(inDict.sum() == outDict.sum())
                 #print("\n\n", node, ":  \ninDict: \n", inDict, "\noutDict\n", outDict)
     varDict = tupledict(varDict)
-    m.setObjective(varDict.sum(), GRB.MINIMIZE)
+    # m.setObjective(varDict.sum(), GRB.MINIMIZE)
+    m.setObjective(objective, GRB.MINIMIZE)
     m.optimize()
 
     return m
