@@ -71,7 +71,7 @@ def constructor(echelonDict, eventRoomList, itemList, costDict, requirementDict)
 
     return arcDict, roomDict
 
-def writer(arcDict, filename):
+def arcDictWriter(arcDict, filename):
     arcList = []
     for arc in arcDict.keys():
         arcList.append([arc[0][0], arc[0][1], arc[0][2], arc[1][0], arc[1][1],
@@ -81,6 +81,15 @@ def writer(arcDict, filename):
         writer.writerow(["Xi", "Yi", "Zi", "Xj", "Yj", "Zj", "Item", "Lij", "Uij", "Cij"])
         writer.writerows(arcList)
     return None
+
+def auxiliaryWriter(roomDict, filename):
+    roomList = []
+    for room in roomDict.keys():
+        roomList.append([room, roomDict[room]])
+    with open(filename, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Room ID", "Room Name"])
+        writer.writerows(roomList)
 
 def main(args):
     (echelonDict, eventRoomList, itemList, requirementDict) = setupDataReader("SetupData.csv")
@@ -92,7 +101,8 @@ def main(args):
     #    print(room)
     #print(echelonDict)
     arcDict, roomDict = constructor(echelonDict, eventRoomList, itemList, costDict, requirementDict)
-    writer(arcDict, "MCNFDataTest.csv")
+    arcDictWriter(arcDict, "MCNFDataTest.csv")
+    auxiliaryWriter(roomDict, "RoomDictionary.csv")
     #print(eventRoomList)
     #print(itemList)
     print(len(arcDict))
