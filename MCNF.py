@@ -47,7 +47,11 @@ def modeler(arcDict, nodeList, commodityList, roomDict):
         name = "(({}, {}, {}), ({}, {}, {}), {})".format(arc[0][0], arc[0][1], arc[0][2], arc[1][0], arc[1][1], arc[1][2], arc[2])
         varDict[arc] = m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
 
-    for room in roomDict
+    lagrangeDict = {}
+    for room in roomDict.values():
+        if room[0] == s:
+            lagrangeDict[room] = 0
+
 
     for commodity in commodityList:
         for node in nodeList:
