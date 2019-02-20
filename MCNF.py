@@ -11,7 +11,8 @@ def arcDataReader(filename):
             rows.append(row)
     arcDict = {}
     for row in rows[1:]:
-        arcDict[((row[0], row[1], row[2]),(row[3], row[4], row[5]), row[6])] = (row[7], row[8], row[9])
+        if len(row) > 0:
+            arcDict[((row[0], row[1], row[2]),(row[3], row[4], row[5]), row[6])] = (row[7], row[8], row[9])
     nodeList = []
     commodityList = []
     for arc in arcDict.keys():
@@ -34,7 +35,8 @@ def roomDictReader(filename):
             rows.append(row)
     roomDict = {}
     for row in rows[1:]:
-        roomDict[row[0]] = row[1]
+        if len(row) > 0:
+            roomDict[row[0]] = row[1]
     return roomDict
 
 def modeler(arcDict, nodeList, commodityList, roomDict):
@@ -49,9 +51,10 @@ def modeler(arcDict, nodeList, commodityList, roomDict):
 
     lagrangeDict = {}
     for room in roomDict.values():
-        if room[0] == s:
+        if room[0] == "S":
             lagrangeDict[room] = 0
 
+    # print(lagrangeDict)
 
     for commodity in commodityList:
         for node in nodeList:
