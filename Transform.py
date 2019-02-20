@@ -68,7 +68,10 @@ def constructor(echelonDict, eventRoomList, itemList, costDict, requirementDict)
                     if ab == "b":
                         for item in itemList:
                             arcDict[((roomI, echelon, "b"),(roomJ, echelon + 1, "a"), item)] = (0, 0, costDict[(roomDict[roomI], roomDict[roomJ])])
-
+    for room in roomDict:
+        for item in itemList:
+            arcDict[(("s", 0, "b"), (room, 1, "a"), item)] = (10000000, 10000000, 0)
+            arcDict[((room, (len(echelonDict.keys()) + 1), "b"), ("t", (len(echelonDict.keys()) + 2), "a"), item)] = (10000000, 10000000, 0)
     return arcDict, roomDict
 
 def arcDictWriter(arcDict, filename):
