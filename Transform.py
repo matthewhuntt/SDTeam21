@@ -67,12 +67,11 @@ def constructor(echelonDict, eventRoomList, itemList, costDict, requirementDict)
                                     arcDict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (qty, qty, 0)
                             if roomDict[roomI] in storageRoomList:
                                 for item in itemList:
-                                    print("storage room")
                                     arcDict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (0, 100000000, 0)
                     if ab == "b":
                         if echelon != len(echelonDict.keys()):
                             for item in itemList:
-                                arcDict[((roomI, echelon, "b"), (roomJ, echelon + 1, "a"), item)] = (0, 0, costDict[(roomDict[roomI], roomDict[roomJ])])
+                                arcDict[((roomI, echelon, "b"), (roomJ, echelon + 1, "a"), item)] = (0, 100000000, costDict[(roomDict[roomI], roomDict[roomJ])])
 
     for room in roomDict:
         for item in itemList:
