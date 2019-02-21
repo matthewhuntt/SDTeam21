@@ -44,11 +44,11 @@ Because rooms are stored as numbers and not names, this file is output from Tran
 
 TO DO:
 
-Implement sub-gradient ascent algorithm
-Implement greedy capacity algorithm
-Get real cost matrix
-Limit number of echelons considered
-Calculate real avereage item volumes
-Get real storage room capacities
-Convert from Gurobi to open-sourced platform?
+Implement sub-gradient ascent algorithm;
+Implement greedy capacity algorithm;
+Get real cost matrix;
+Limit number of echelons considered;
+Calculate real avereage item volumes;
+Get real storage room capacities;
+Convert from Gurobi to open-sourced platform?;
 
