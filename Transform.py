@@ -65,13 +65,28 @@ def constructor(echelonDict, eventRoomList, itemList, costDict, requirementDict)
                                 for requirement in requirementDict[(roomDict[roomI], echelon)]:
                                     item, qty = requirement[0], requirement[1]
                                     arcDict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (qty, qty, 0)
+                            if roomDict[roomI] in storageRoomList:
+                                for item in itemList:
+                                    print("storage room")
+                                    arcDict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (0, 100000000, 0)
                     if ab == "b":
-                        for item in itemList:
-                            arcDict[((roomI, echelon, "b"),(roomJ, echelon + 1, "a"), item)] = (0, 0, costDict[(roomDict[roomI], roomDict[roomJ])])
+                        if echelon != len(echelonDict.keys()):
+                            for item in itemList:
+                                arcDict[((roomI, echelon, "b"), (roomJ, echelon + 1, "a"), item)] = (0, 0, costDict[(roomDict[roomI], roomDict[roomJ])])
+
     for room in roomDict:
         for item in itemList:
-            arcDict[(("s", 0, "b"), (room, 1, "a"), item)] = (10000000, 10000000, 0)
-            arcDict[((room, (len(echelonDict.keys()) + 1), "b"), ("t", (len(echelonDict.keys()) + 2), "a"), item)] = (10000000, 10000000, 0)
+            arcDict[(("s", 0, "a"), (room, 0, "b"), item)] = (100000, 100000, 0)
+            arcDict[((room, (len(echelonDict.keys())), "b"), ("t", (len(echelonDict.keys()) + 1), "a"), item)] = (0, 1000000000, 0)
+
+    for roomI in roomDict:
+        for roomJ in roomDict:
+            for item in itemList:
+                arcDict[((roomI, 0, "b"), (roomJ, 1, "a"), item)] = (0, 100000000, costDict[(roomDict[roomI], roomDict[roomJ])])
+
+    rooms = len(roomDict.keys())
+    for item in itemList:
+        arcDict[(("t", (len(echelonDict.keys()) + 1), "a"), ("t", (len(echelonDict.keys()) + 1), "b"), item)] = (100000 * rooms, 100000 * rooms, 0)
     return arcDict, roomDict
 
 def arcDictWriter(arcDict, filename):
@@ -109,6 +124,10 @@ def main(args):
     #print(eventRoomList)
     #print(itemList)
     print(len(arcDict))
+    print(len(roomDict.keys()))
+    print(roomDict)
+    print(len(eventRoomList))
+    print(len(echelonDict.keys()))
 
 if __name__ == '__main__':
     import sys
