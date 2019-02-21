@@ -50,29 +50,29 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
         varDict[arc] = m.addVar(lb=lowerBound, ub=upperBound, obj=cost, name=name)
 
     lagrangeDict = {}
-    for room in roomDict.values():
-        if room[0] == "S":
-            lagrangeDict[room] = 0
+    for node in nodeList:
+        if node[0][0] == "S":
+            lagrangeDict[node] = 1
     # print(lagrangeDict)
 
     objective = LinExpr()
     for arc in arcDict.keys():
-        print(varDict[arc], arcDict[arc][2])
+        # print(varDict[arc], arcDict[arc][2])
         objective.add(varDict[arc], arcDict[arc][2])
 
-    for i in range(objective.size()):
-        print(objective.getVar(i), objective.getCoeff(i))
+    # for i in range(objective.size()):
+    #     print(objective.getVar(i), objective.getCoeff(i))
 
-    # p = LinExpr()
-    # for node in nodeList:
-    #     if ((node[0][0]) == "S" and node[2] == "b"):
-    #         vol_i = LinExpr()
-    #         for commodity in commodityList:
-    #             for arc in arcDict: # Can cut by only looking at (a->b for that node for all coms)
-    #                 if arc[1] == node and arc[2] == commodity:
-    #                     vol_i.addTerm(commodityVolDict[commodity], arc)
-    #         p.multAdd(lagrangeDict[node], vol_i)
-    # objective.add(p)
+    p = LinExpr()
+    for node in nodeList:
+        if ((node[0][0]) == "S" and node[2] == "b"):
+            vol_i = LinExpr()
+            for commodity in commodityList:
+                for arc in arcDict: # Can cut by only looking at (a->b for that node for all coms)
+                    if arc[1] == node and arc[2] == commodity:
+                        vol_i.add(varDict[arc], commodityVolDict[commodity])
+            p.add(vol_i, lagrangeDict[node])
+    objective.add(p)
 
 
 
