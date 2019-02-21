@@ -56,15 +56,8 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
     # print(lagrangeDict)
 
     objective = LinExpr()
-    for var in varDict.values():
-        objective.add(var, var.getAttr(GRB.Attr.Obj))
-        # print("")
-        # print("")
-        # print("Var is of type " + str(type(var)))
-        # print("")
-        # print(var.lb)
-        # print(var.obj)
-        # print(var.getAttr(GRB.Attr.X))
+    for arc in arcDict.keys():
+        objective.add(varDict[arc], arcDict[arc][2])
 
     # p = LinExpr()
     # for node in nodeList:
