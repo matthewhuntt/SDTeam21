@@ -4,19 +4,21 @@ MCNF.py
 
 This file houses the optimization model. It runs in Gurobi using the data in MCNFdata.csv.
 
+
 MCNFData.csv
 
-<<<<<<< HEAD
 This file holds the data for the optimization model.
 
 
+MCNFDataTest.csv
 
-=======
-This file holds the data for the optimization model.
+This file is the current home of the output of Transform.py
+
 
 Transform.py
 
 This file manipulates the data in SetupData.csv and outputs a file in the same format as MCNFData.csv.
+
 
 SetupData.csv
 
@@ -30,4 +32,23 @@ will be recorded as:
  - 20 Meeting Room Chairs to B 212
 
 
->>>>>>> 245619da98c20b857cd9fb677ff38427560a6c91
+CostData.csv:
+
+A cost matrix giving the cost of moving from each room to every other room.
+
+
+RoomDictionary.csv:
+
+Because rooms are stored as numbers and not names, this file is output from Transform.py for record-keeping.
+
+
+TO DO:
+
+Implement sub-gradient ascent algorithm;
+Implement greedy capacity algorithm;
+Get real cost matrix;
+Limit number of echelons considered;
+Calculate real avereage item volumes;
+Get real storage room capacities;
+Convert from Gurobi to open-sourced platform?;
+
