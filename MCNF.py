@@ -57,7 +57,11 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
 
     objective = LinExpr()
     for arc in arcDict.keys():
+        print(varDict[arc], arcDict[arc][2])
         objective.add(varDict[arc], arcDict[arc][2])
+
+    for i in range(objective.size()):
+        print(objective.getVar(i), objective.getCoeff(i))
 
     # p = LinExpr()
     # for node in nodeList:
@@ -74,7 +78,7 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
 
     for commodity in commodityList:
         for node in nodeList:
-            if node[0] != "s" and (node[0] != "t" and node[2] != "b"):
+            if node[0] != "s" and (node[0] != "t"):
                 inDict = {}
                 outDict = {}
                 for arc in arcDict:
@@ -122,7 +126,7 @@ def main(args):
     roomCapDict = {"1": 10000}
     commodityVolDict = {"1": 2, "2": 3}
     m = modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVolDict)
-    #printSolution(m)
+    printSolution(m)
 
 
 
