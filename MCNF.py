@@ -111,13 +111,14 @@ def printSolution(m):
     if m.status == GRB.Status.OPTIMAL:
         print('\nObjective Value: %g' % m.objVal)
         for var in m.getVars():
-            print (var, var.obj)
+            if var.X > 0.0:
+                print("{:<55s}| {:>8.0f}".format(var.VarName, var.X))
     else:
         print('No solution;', m.status)
 
 
 def main(args):
-    arcDict, nodeList, commodityList = arcDataReader("MCNFData.csv")
+    arcDict, nodeList, commodityList = arcDataReader("MCNFDataTest.csv")
     roomDict = roomDictReader("RoomDictionary.csv")
     #print(arcDict)
     #print("\n\n")
