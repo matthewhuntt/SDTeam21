@@ -55,6 +55,9 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
             lagrangeDict[node] = 1
     # print(lagrangeDict)
 
+#
+# Refactor to a method. obj will be rewritten for each itteration of subgradient
+#
     objective = LinExpr()
     for arc in arcDict.keys():
         # print(varDict[arc], arcDict[arc][2])
@@ -63,6 +66,7 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
     # for i in range(objective.size()):
     #     print(objective.getVar(i), objective.getCoeff(i))
 
+    ## create a mapping of node to vars to make (Ax-b) easier to calculate
     p = LinExpr()
     for node in nodeList:
         if ((node[0][0]) == "S" and node[2] == "b"):
@@ -73,7 +77,9 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
                         vol_i.add(varDict[arc], commodityVolDict[commodity])
             p.add(vol_i, lagrangeDict[node])
     objective.add(p)
-
+#
+# End of method
+#
 
 
     for commodity in commodityList:
