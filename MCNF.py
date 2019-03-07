@@ -97,7 +97,8 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
 
     return m
 
-def subgradient_ascent(model, lagrangeDict)
+def subgradient_ascent(model, lagrangeDict):
+    print("subgradient ascent")
     # counter = 0
     # while ((|| (multiplier_(counter) - muliplier_(counter - 1))/ counter - 1) || > 0) OR (counter < ? 1,000,000 ?)):
     #   counter++
@@ -108,6 +109,17 @@ def subgradient_ascent(model, lagrangeDict)
     #       update multiplier with stepsize = sqrt(1/counter)
     #           multiplier_j = multiplier_j + stepsize * stepest_ascent
     # Update objective function
+
+def greedy_swap(model):
+    print("greedy swap")
+    #  pull all storage nodes in a single echelon
+    #  check Ax - b:
+    #      if Ax-b > 0, then over capacity
+    #      if Ax-b < 0, under capacity
+    #  minimize the added cost to the model
+    #      minimize the cost change on inflow + cost change for outflow.
+    #      if we shift both inflow and outflow of both rooms by Ax-b issues shouldnt propogate
+    #      Assignment optimization model?
 
 # Print solution
     # if m.status == GRB.Status.OPTIMAL:
