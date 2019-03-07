@@ -97,6 +97,18 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
 
     return m
 
+def subgradient_ascent(model, lagrangeDict)
+    # counter = 0
+    # while ((|| (multiplier_(counter) - muliplier_(counter - 1))/ counter - 1) || > 0) OR (counter < ? 1,000,000 ?)):
+    #   counter++
+    #   solve model
+    #   for all Stroage Room nodes (j)
+    #       check (Ax - b)
+    #           stepest_ascent = sum over k( v_k*x_ijk) - V_j ; where j is the storage room node
+    #       update multiplier with stepsize = sqrt(1/counter)
+    #           multiplier_j = multiplier_j + stepsize * stepest_ascent
+    # Update objective function
+
 # Print solution
     # if m.status == GRB.Status.OPTIMAL:
     #     solution = m.getAttr('varDict', )
@@ -117,6 +129,7 @@ def printSolution(m):
         print('No solution;', m.status)
 
 
+
 def main(args):
     arcDict, nodeList, commodityList = arcDataReader("MCNFDataTest.csv")
     roomDict = roomDictReader("RoomDictionary.csv")
@@ -130,11 +143,9 @@ def main(args):
     printSolution(m)
 
 
-
 if __name__ == '__main__':
     import sys
     main(sys.argv)
-
 
 
 
