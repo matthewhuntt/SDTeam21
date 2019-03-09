@@ -93,6 +93,7 @@ def modeler(arcDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapDict
         # If its just for ease of accesing data, we should
         # figure out how to do it with just varDict.
 
+
 ### LAGRANGE & OBJ
     # FOR TESTING
     # for i in range(objective.size()):
@@ -101,6 +102,8 @@ def modeler(arcDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapDict
     # EFFICIENCY
     # create a mapping of node to vars to make (Ax-b) easier to calculate
         # Create mapping in one helper
+    capTermDict = capTermMapper(nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict)
+
         # Update the penatly term using the mapping as a reference
 
 ### END LANGRANGE & OBJ
@@ -133,10 +136,12 @@ def modeler(arcDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapDict
     return m
 
 
-
 def create_mcnfObj(varDict, arcDict):
     ''' Creates cTx term of the objective.
     store in model object
+
+    might be able to pull this from the original model, after vars are added
+    would save us a trip though the arc dict
 
     KEEP THIS as a constant (in mcnf object) for easy rewriting
     '''
@@ -146,7 +151,8 @@ def create_mcnfObj(varDict, arcDict):
         mcnfObj.add(varDict[arc], arcDict[arc][2])
     return mcnfObj
 
-def penalty_term(nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict):
+
+def capTermMapper(nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict):
     '''
         Creates the Penatly Term for the Lagrangian Relaxation using
         the most recent lagrangian mulitpliers.
@@ -154,18 +160,29 @@ def penalty_term(nodeList, commodityList, arcDict, varDict, commodityVolDict, la
         Keyword Arguements:
         arg1 --
     '''
-    penalty = LinExpr()
-    for node in nodeList:
+    # Capacity Term mapping;
+    # node: LinExpr(Ax-b)
+    capTermDict = {}
+    for node in nodeList: # TODO - EFFICIENCY: partition nodelist between,
         if ((node[0][0]) == "S" and node[2] == "b"):
             vol_i = LinExpr()
             for commodity in commodityList:
-                for arc in arcDict: # Can cut by only looking at (a->b for that node for all coms)
+                for arc in arcDict: # TODO - EFFICIENCY: Can cut by only looking at (a->b for that node for all coms)
                     if arc[1] == node and arc[2] == commodity:
                         vol_i.add(varDict[arc], commodityVolDict[commodity])
-            penalty.add(vol_i, lagrangeDict[node])
-    return penalty
+            # vol_i.add() ## TODO: SUBTRACT ROOM CAPACITY
+            capTermDict[node] = vol_i
+    return capTermDict
 
-def update_objective(mcnfObj, nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict):
+
+def penalty_term(capTermDict, lagrangeDict):
+    penalty = LinExpr()
+    for node in capTermDict:
+        penalty.add(capTermDict[node], lagrangeDict[node])
+    # penalty_term  = muT*(Ax-b)
+
+
+def update_objective(mcnfObj, capTermDict, lagrangeDict):
     '''
         Creates the linear expression object to use for the current iteration of the subgradient ascent
 
@@ -173,10 +190,11 @@ def update_objective(mcnfObj, nodeList, commodityList, arcDict, varDict, commodi
         to rewrite, add constant and output from penalty_term() to new LinExpr and return
     '''
     objective = LinExpr()
-    penalty = penalty_term(nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict)
+    penalty = penalty_term(capTermDict, lagrangeDict)
     objective.add(mcnfObj)
     objective.add(penalty)
     return objective
+
 
 def subgradient_ascent(model, lagrangeDict):
     print("subgradient ascent")
@@ -191,6 +209,7 @@ def subgradient_ascent(model, lagrangeDict):
     #           multiplier_j = multiplier_j + stepsize * stepest_ascent
     # Update objective function
 
+
 def greedy_swap(model):
     print("greedy swap")
     #  pull all storage nodes in a single echelon
@@ -202,15 +221,6 @@ def greedy_swap(model):
     #      if we shift both inflow and outflow of both rooms by Ax-b issues shouldnt propogate
     #      Assignment optimization model?
 
-# Print solution
-    # if m.status == GRB.Status.OPTIMAL:
-    #     solution = m.getAttr('varDict', )
-    #     for h in commodities:
-    #         print('\nOptimal flows for %s:' % h)
-    #         for i,j in arcs:
-    #             if solution[h,i,j] > 0:
-    #                 print('%s -> %s: %g' % (i, j, solution[h,i,j]))
-    #
 
 def printSolution(m):
     if m.status == GRB.Status.OPTIMAL:
@@ -218,6 +228,10 @@ def printSolution(m):
         for var in m.getVars():
             if var.X > 0.0:
                 # TODO: remove dummy arcs
+                # TODO: Order by:
+                #           - Time
+                #           - Room
+                #           - Commodity
                 print("{:<55s}| {:>8.0f}".format(var.VarName, var.X))
     else:
         print('No solution;', m.status)
