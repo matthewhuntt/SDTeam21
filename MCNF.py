@@ -1,30 +1,35 @@
-
-
 from gurobipy import *
 import csv
 
 def arcDataReader(filename):
+    # Reads in data
     with open(filename, "r") as f:
         reader = csv.reader(f)
         rows = []
         for row in reader:
             rows.append(row)
-    arcDict = {}
-    for row in rows[1:]:
-        if len(row) > 0:
-            arcDict[((row[0], row[1], row[2]),(row[3], row[4], row[5]), row[6])] = (row[7], row[8], row[9])
+
+    # Formats data into Network Components
+    arcDict = {}    # (tail, head, commodity): (lb, ub, cost)
     nodeList = []
     commodityList = []
-    for arc in arcDict.keys():
-        fromNode = arc[0]
-        toNode = arc[1]
-        commodity = arc[2]
-        if fromNode not in nodeList:
-            nodeList.append(fromNode)
-        if toNode not in nodeList:
-            nodeList.append(toNode)
-        if commodity not in commodityList:
-            commodityList.append(commodity)
+    for row in rows[1:]: # Removes Header
+        if len(row) > 0:
+            tail = (row[0], row[1], row[2]) # Origin Node
+            head = (row[3], row[4], row[5]) # Destination Node
+            commodity = row[6]              # Equipment Type
+            lb = row[7]     # Lower Bound of Arc
+            ub= row[8]      # Upper Bound of Arc
+            cost = row[9]   # Cost/unit of Arc
+
+            for node in [tail, head]:
+                if node not in nodeList:
+                    nodeList.append(node)
+            if commodity not in commodityList:
+                commodityList.append(commodity)
+
+            arcDict[(tail, head, commodity)] = (lb, ub, cost)
+
     return arcDict, nodeList, commodityList
 
 def roomDictReader(filename):
@@ -67,16 +72,8 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
     #     print(objective.getVar(i), objective.getCoeff(i))
 
     ## create a mapping of node to vars to make (Ax-b) easier to calculate
-    p = LinExpr()
-    for node in nodeList:
-        if ((node[0][0]) == "S" and node[2] == "b"):
-            vol_i = LinExpr()
-            for commodity in commodityList:
-                for arc in arcDict: # Can cut by only looking at (a->b for that node for all coms)
-                    if arc[1] == node and arc[2] == commodity:
-                        vol_i.add(varDict[arc], commodityVolDict[commodity])
-            p.add(vol_i, lagrangeDict[node])
-    objective.add(p)
+    penalty = penalty_term(nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict)
+    objective.add(penalty)
 #
 # End of method
 #
@@ -102,6 +99,25 @@ def modeler(arcDict, nodeList, commodityList, roomDict, roomCapDict, commodityVo
     m.optimize()
 
     return m
+
+def penalty_term(nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict):
+    '''
+        Creates the Penatly Term for the Lagrangian Relaxation using
+        the most recent lagrangian mulitpliers.
+
+        Keyword Arguements:
+        arg1 --
+    '''
+    penalty = LinExpr()
+    for node in nodeList:
+        if ((node[0][0]) == "S" and node[2] == "b"):
+            vol_i = LinExpr()
+            for commodity in commodityList:
+                for arc in arcDict: # Can cut by only looking at (a->b for that node for all coms)
+                    if arc[1] == node and arc[2] == commodity:
+                        vol_i.add(varDict[arc], commodityVolDict[commodity])
+            penalty.add(vol_i, lagrangeDict[node])
+    return penalty
 
 def subgradient_ascent(model, lagrangeDict):
     print("subgradient ascent")
@@ -142,6 +158,7 @@ def printSolution(m):
         print('\nObjective Value: %g' % m.objVal)
         for var in m.getVars():
             if var.X > 0.0:
+                # remove dummy arcs
                 print("{:<55s}| {:>8.0f}".format(var.VarName, var.X))
     else:
         print('No solution;', m.status)
