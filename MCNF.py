@@ -1,5 +1,6 @@
 from gurobipy import *
 import csv
+# import MCNF_Model
 
 def arcDataReader(filename):
     # Reads in data
@@ -39,6 +40,8 @@ def arcDataReader(filename):
             # Updates arcDict
             arcDict[(tail, head, commodity)] = (lb, ub, cost)
 
+    # Example of Model Object to pass info. See OO Encapculation
+    # model_framework = MCNF_Model(arcDict, lagrangeDict, nodeList, commodityList)
     return arcDict, lagrangeDict, nodeList, commodityList
 
 
@@ -101,7 +104,7 @@ def modeler(arcDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapDict
     # rewrite in quick helper funct. ***
     objective = LinExpr() #***
 
-    # KEEP THIS as a constant for easy rewriting
+    # KEEP THIS as a constant (in mcnf object) for easy rewriting
     mcnfObj = LinExpr()
     for arc in arcDict.keys():
         mcnfObj.add(varDict[arc], arcDict[arc][2])
