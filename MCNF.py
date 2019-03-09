@@ -46,6 +46,8 @@ def arcDataReader(filename):
 
 
 # TODO: Mix with Langrange Multiplier Dict/ Node list?
+# This is static data only used for reference.
+# Shift to system_statics.py
 def roomKeyReader(filename):
     with open (filename, "r") as f:
         reader = csv.reader(f)
@@ -77,7 +79,7 @@ def modeler(arcDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapDict
         # a waste.
         # It then follows that, since the costs come from
         # the Dijkstra Matrix, its redundant to have it in
-        # the arcDict.
+        # the arcDict. (unless we prioritize elevators/large movements in evenings)
         # Is there a more concise way to create arcs?
 
         # TODO: Cleaner Way? Toss to a helper function to create var and document?
@@ -92,32 +94,19 @@ def modeler(arcDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapDict
         # figure out how to do it with just varDict.
 
 ### LAGRANGE & OBJ
-# MOVED TO arcDictReader
-    # lagrangeDict = {}
-    # for node in nodeList:
-    #     if node[0][0] == "S":
-    #         lagrangeDict[node] = 1
-    # print(lagrangeDict)
-
-    # Two parts: mcnfObj and penatly term.
-    # to rewrite, add constant to output from penalty_term()
-    # rewrite in quick helper funct. ***
-    objective = LinExpr() #***
-
-    # KEEP THIS as a constant (in mcnf object) for easy rewriting
-    mcnfObj = LinExpr()
-    for arc in arcDict.keys():
-        mcnfObj.add(varDict[arc], arcDict[arc][2])
-
+    # FOR TESTING
     # for i in range(objective.size()):
     #     print(objective.getVar(i), objective.getCoeff(i))
 
-    ## create a mapping of node to vars to make (Ax-b) easier to calculate
-    penalty = penalty_term(nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict)
+    # EFFICIENCY
+    # create a mapping of node to vars to make (Ax-b) easier to calculate
+        # Create mapping in one helper
+        # Update the penatly term using the mapping as a reference
 
-    objective.add(mcnfObj) #***
-    objective.add(penalty) #***
 ### END LANGRANGE & OBJ
+
+    mcnfObj = create_mcnfObj(varDict, arcDict)
+    objective = update_objective(mcnfObj, nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict)
 
 # TODO: Read through, document and reformat if needed.
     for commodity in commodityList:
@@ -135,11 +124,27 @@ def modeler(arcDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapDict
                 m.addConstr(inDict.sum() == outDict.sum())
                 #print("\n\n", node, ":  \ninDict: \n", inDict, "\noutDict\n", outDict)
 
-    varDict = tupledict(varDict) # TODO: Purpose?? not used again
     m.setObjective(objective, GRB.MINIMIZE)
     m.optimize()
 
+    ## TODO: Refactor so this ONLY creates the framework of the model
+    ## subgradient_ascent() will solve, and then update the model and repeat
+
     return m
+
+
+
+def create_mcnfObj(varDict, arcDict):
+    ''' Creates cTx term of the objective.
+    store in model object
+
+    KEEP THIS as a constant (in mcnf object) for easy rewriting
+    '''
+
+    mcnfObj = LinExpr()
+    for arc in arcDict.keys():
+        mcnfObj.add(varDict[arc], arcDict[arc][2])
+    return mcnfObj
 
 def penalty_term(nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict):
     '''
@@ -159,6 +164,19 @@ def penalty_term(nodeList, commodityList, arcDict, varDict, commodityVolDict, la
                         vol_i.add(varDict[arc], commodityVolDict[commodity])
             penalty.add(vol_i, lagrangeDict[node])
     return penalty
+
+def update_objective(mcnfObj, nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict):
+    '''
+        Creates the linear expression object to use for the current iteration of the subgradient ascent
+
+        Two parts: mcnfObj (constant) and penatly term.
+        to rewrite, add constant and output from penalty_term() to new LinExpr and return
+    '''
+    objective = LinExpr()
+    penalty = penalty_term(nodeList, commodityList, arcDict, varDict, commodityVolDict, lagrangeDict)
+    objective.add(mcnfObj)
+    objective.add(penalty)
+    return objective
 
 def subgradient_ascent(model, lagrangeDict):
     print("subgradient ascent")
