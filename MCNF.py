@@ -11,7 +11,7 @@ def arcDataReader(filename, m):
             rows.append(row)
 
     # Formats data into Network Components
-    varDict = {}    # (tail, head, commodity): (lb, ub, cost)
+    varDict = {}    # (tail, head, commodity): Gurobi Variable
     lagrangeDict = {} # node: multiplier
     nodeList = []
     commodityList = []
@@ -29,7 +29,9 @@ def arcDataReader(filename, m):
                 if node not in nodeList:
                     nodeList.append(node)
 
-                    # TODO: Cleaner way, & why set to 1?
+                    # TODO:
+                    #   - Cleaner way, separate types of arcs
+                    #   - Why set to 1?
                     if node[0][0] == "S":
                         lagrangeDict[node] = 1
 
@@ -37,22 +39,18 @@ def arcDataReader(filename, m):
             if commodity not in commodityList:
                 commodityList.append(commodity)
 
-            # Updates arcDict
-            # arcDict[(tail, head, commodity)] = (lb, ub, cost)
-
             # Updates varDict
             arc = (tail, head, commodity)
             varDict[arc] = makeVar(m, arc, lb, ub, cost)
+
     m.update()
-    # Example of Model Object to pass info. See OO Encapculation
-    # model_framework = MCNF_Model(arcDict, lagrangeDict, nodeList, commodityList)
     return varDict, lagrangeDict, nodeList, commodityList
 
 
+def roomKeyReader(filename):
 # TODO: Mix with Langrange Multiplier Dict/ Node list?
 # This is static data only used for reference.
 # Shift to system_statics.py
-def roomKeyReader(filename):
     with open (filename, "r") as f:
         reader = csv.reader(f)
         rows = []
@@ -68,9 +66,14 @@ def roomKeyReader(filename):
     return roomKey
 
 
-# Pass in MCNF Object instead of all the individual dicts.
-# Cleaner? See OO Principle: Encapsulation
 def modeler(m, varDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapDict, commodityVolDict):
+    '''
+    # Pass in MCNF Object instead of all the individual dicts.
+    # Cleaner? See OO Principle: Encapsulation
+    '''
+
+### TO BE REMOVED
+    ## MOVED TO ARCDATAREADER()
     # m = Model("m")
     # varDict = {}
     # for arc in arcDict:
@@ -92,8 +95,10 @@ def modeler(m, varDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapD
         # ArcDict is only used to create varDict.
         # To improve efficiency, we can just create the varDict in arcDataReader.
     # m.update()
+    ##
+### End TO BE REMOVED
 
-### LAGRANGE & OBJ
+### LAGRANGE & OBJ: REFACTORED
     # FOR TESTING
     # for i in range(objective.size()):
     #     print(objective.getVar(i), objective.getCoeff(i))
@@ -101,19 +106,19 @@ def modeler(m, varDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapD
     # EFFICIENCY
     # create a mapping of node to vars to make (Ax-b) easier to calculate
         # Create mapping in one helper
-    capTermDict = capTermMapper(nodeList, commodityList, varDict, commodityVolDict, lagrangeDict)
 
         # Update the penatly term using the mapping as a reference
-
 ### END LANGRANGE & OBJ
 
+
+    capTermDict = capTermMapper(nodeList, commodityList, varDict, commodityVolDict, lagrangeDict)
     mcnfObj = create_mcnfObj(varDict)
     objective = update_objective(mcnfObj, capTermDict, lagrangeDict)
 
 # TODO: Read through, document and reformat if needed.
     for commodity in commodityList:
         for node in nodeList:
-            if node[0] != "s" and (node[0] != "t"):
+            if node[0] != "s" and (node[0] != "t"): ## TODO: Remove S and T, they just force us to have another echelon
                 inDict = {}
                 outDict = {}
                 for arc in varDict:
@@ -125,18 +130,9 @@ def modeler(m, varDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapD
                 outDict = tupledict(outDict)
                 m.addConstr(inDict.sum() == outDict.sum())
                 #print("\n\n", node, ":  \ninDict: \n", inDict, "\noutDict\n", outDict)
-    m.setObjective(objective, GRB.MINIMIZE)
-    m.optimize()
 
-    # arc = list(arcDict.keys())[0]
-    # print()
-    # print('===============================================')
-    # print('name' + str(varDict[arc].getAttr('VarName')))
-    # # print('value' + str(varDict[arc].getAttr('X')))
-    # print('lb' + str(varDict[arc].getAttr('LB')))
-    # print('ub' + str(varDict[arc].getAttr('UB')))
-    # print('obj' + str(varDict[arc].getAttr('Obj')))
-    # print('===============================================')
+    m.setObjective(objective, GRB.MINIMIZE) # Move to SUBGRADIENT ASCENT with helpers
+    m.optimize() # Move to SUBGRADIENT ASCENT
 
     ## TODO: Refactor so this ONLY creates the framework of the model
     ## subgradient_ascent() will solve, and then update the model and repeat
@@ -144,6 +140,7 @@ def modeler(m, varDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapD
     return m
 
 def makeVar(m, arc, lb, ub, cost):
+    '''Creates Gurobi Variable and adds it to the model.'''
     tail, head, commodity = arc
     name = "(({}, {}, {}), ({}, {}, {}), {})".format(
         tail[0], tail[1], tail[2],
@@ -155,12 +152,12 @@ def create_mcnfObj(varDict):
     ''' Creates cTx term of the objective.
     store in model object
 
+    TODO:
     might be able to pull this from the original model, after vars are added
     would save us a trip though the varDict
 
     KEEP THIS as a constant (in mcnf object) for easy rewriting
     '''
-
     mcnfObj = LinExpr()
     for arc in varDict.keys():
         mcnfObj.add(varDict[arc], varDict[arc].Obj)
@@ -178,23 +175,29 @@ def capTermMapper(nodeList, commodityList, varDict, commodityVolDict, lagrangeDi
     # Capacity Term mapping;
     # node: LinExpr(Ax-b)
     capTermDict = {}
-    for node in nodeList: # TODO - EFFICIENCY: partition nodelist between,
+
+    for node in nodeList: # TODO - EFFICIENCY: partition nodelist, storage and not, a vs b
         if ((node[0][0]) == "S" and node[2] == "b"):
-            vol_i = LinExpr()
+            vol_node_i = LinExpr()
             for commodity in commodityList:
                 for arc in varDict: # TODO - EFFICIENCY: Can cut by only looking at (a->b for that node for all coms)
                     if arc[1] == node and arc[2] == commodity:
-                        vol_i.add(varDict[arc], commodityVolDict[commodity])
-            # vol_i.add() ## TODO: SUBTRACT ROOM CAPACITY
-            capTermDict[node] = vol_i
+                        vol_node_i.add(varDict[arc], commodityVolDict[commodity])
+            # vol_node_i.add() ## TODO: SUBTRACT ROOM CAPACITY
+            capTermDict[node] = vol_node_i
     return capTermDict
 
 
 def penalty_term(capTermDict, lagrangeDict):
+    ''' Creates the Lagrangian Penalty Term.
+    uses the capacity term (Ax-b)
+    and the lagrangian multiplier (muT)
+
+    penalty_term  = muT*(Ax-b)
+    '''
     penalty = LinExpr()
     for node in capTermDict:
         penalty.add(capTermDict[node], lagrangeDict[node])
-    # penalty_term  = muT*(Ax-b)
     return penalty
 
 def update_objective(mcnfObj, capTermDict, lagrangeDict):
@@ -211,21 +214,21 @@ def update_objective(mcnfObj, capTermDict, lagrangeDict):
     return objective
 
 
-def subgradient_ascent(model, lagrangeDict):
+def subgradient_ascent(m, capTermDict, lagrangeDict):
     print("subgradient ascent")
     # counter = 0
     # while ((|| (multiplier_(counter) - muliplier_(counter - 1))/ counter - 1) || > 0) OR (counter < ? 1,000,000 ?)):
     #   counter++
-    #   solve model
-    #   for all Stroage Room nodes (j)
+    #   m.optimize() | solve model
+    #   for all node in capTermDict:
     #       check (Ax - b)
-    #           stepest_ascent = sum over k( v_k*x_ijk) - V_j ; where j is the storage room node
+    #           stepest_ascent = capTermDict[node]  | [sum over k( v_k*x_ijk) - V_j  where j is the storage room node]
     #       update multiplier with stepsize = sqrt(1/counter)
-    #           multiplier_j = multiplier_j + stepsize * stepest_ascent
-    # Update objective function
+    #           lagrandeDict[node] = max(lagrandeDict[node] + stepsize * stepest_ascent, 0)
+    #   Update objective function
 
 
-def greedy_swap(model):
+def greedy_swap(m, capTermDict):
     print("greedy swap")
     #  pull all storage nodes in a single echelon
     #  check Ax - b:
@@ -254,15 +257,13 @@ def printSolution(m):
 
 
 def main(args):
-    m = Model("m")
-    varDict, lagrangeDict, nodeList, commodityList = arcDataReader("MCNFDataTest.csv", m)
-    roomKey = roomKeyReader("roomDictionary.csv")
-    #print(arcDict)
-    #print("\n\n")
-    #print(nodeList)
-    #roomCapDict = {"S1": 100000, "S2": 100000, "S3": 100000, "S4": 100000, "S5": 100000, "S6": 100000, "S7": 100000, "S8": 100000, "S9": 100000, "S10": 100000}
-    roomCapDict = {"1": 10000}
-    commodityVolDict = {"1": 2, "2": 3}
+    # TODO: create Model object to pass in mutable model data
+    # TODO: create system object to pass in inmutable data (dijksta, roomkey, roomCap, etc.)
+    m = Model("m") # TODO: mcnf_object
+    varDict, lagrangeDict, nodeList, commodityList = arcDataReader("MCNFDataTest.csv", m) # TODO: mcnf_object
+    roomKey = roomKeyReader("roomDictionary.csv") # TODO: system_statics
+    roomCapDict = {"1": 10000} # TODO: system_statics
+    commodityVolDict = {"1": 2, "2": 3} # TODO: system_statics
     m = modeler(m, varDict, lagrangeDict, nodeList, commodityList, roomKey, roomCapDict, commodityVolDict)
     printSolution(m)
 
