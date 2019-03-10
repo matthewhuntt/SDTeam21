@@ -3,12 +3,12 @@ import csv
 import math
 
 class DataStorage:
-    ''' Class to store network data '''
+    '''Class to store network data.'''
     pass
 
 
 def csvReader(filename):
-    ''' Reads csv file and returns non-empty rows'''
+    '''Reads csv file and returns non-empty rows.'''
 
     with open (filename, "r") as f:
         reader = csv.reader(f)
@@ -226,6 +226,7 @@ def subgradient_ascent(mcnf, statics):
     #   Update objective function
 
 def norm(vector):
+    '''Returns the Norm of the vector arguement.'''
     sum = 0
     for x in vector:
         sum += x**2
@@ -263,16 +264,31 @@ def printSolution(m):
 
 
 def main(args):
+    # statics is used to store inmutable data from the
+    # system, including:
+    #   - Room ID Mapping | roomKey
+    #   - Stroage Room Capacity Dictionary | roomCapDict
+    #   - Commodity Volume Dictionary | commodityVolDict
+    #   - Equipment Initial Loaction
+    #   - Dijkstra's Matrix
+    #
+    # Only used for reference.
     statics = DataStorage()
-    # Commodity Volume Dictionary | commodityVolDict
-    # Stroage Room Capacity Dictionary | roomCapDict
-    # Room ID Mapping | roomKey
-    # Equipment Initial Loaction
-    # Dijkstra's Matrix
     statics.roomKey = roomKeyReader("RoomDictionary.csv")
     statics.room_caps = roomKeyReader("RoomCapacities.csv")
     statics.commodity_vols = roomKeyReader("CommodityVolumes.csv")
 
+    # mcnf is used to store mutable data about the current
+    # state fo the optimization model, including:
+    #   - Gurobi Model | m
+    #   - Unrelaxed MCNF Objective | unrelaxed_objective
+    #   - Mapping of arcs to variables | varDict
+    #   - Mapping of storage nodes to Lagrange multipliers | lagrange_mults
+    #   - List of all nodes present in MCNF | nodeList
+    #   - List of all commodities present in MCNF | commodityList
+    #   - Mapping of storage nodes to thier Capacity Constraints | cap_constrs
+    #
+    # To be updated as the state of the model changes.
     mcnf = DataStorage()
     mcnf.m = Model("m")
     arc_data = csvReader("MCNFDataTest.csv")
@@ -289,25 +305,3 @@ def main(args):
 if __name__ == '__main__':
     import sys
     main(sys.argv)
-
-################################################
-# unrelaxed_objective taken after all vars added in
-#   construct_network()
-#
-# def unrelaxed_mcnf_objective(mcnf):
-#     ''' Creates cTx term of the objective.
-#     store in model object
-#
-#     TODO:
-#     might be able to pull this from the original model,
-#     after vars are added would save us a trip though the
-#     varDict
-#
-#     KEEP THIS as a constant (in mcnf object) for easy
-#     rewriting
-#     '''
-#     mcnfObj = LinExpr()
-#     varDict = mcnf.varDict
-#     for arc in varDict.keys():
-#         mcnfObj.add(varDict[arc], varDict[arc].Obj)
-#     mcnf.mcnfObj = mcnfObj
