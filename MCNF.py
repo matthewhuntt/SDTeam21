@@ -19,12 +19,15 @@ def csvReader(filename):
     return rows
 
 def roomKeyReader(filename):
-
+    # TODO: Generalize! Mix with CSV reader?
     rows = csvReader(filename)
     roomKey = {}
     for row in rows[1:]:
-        if len(row) > 0:
-            roomKey[row[0]] = row[1]
+        if len(row) > 0: # TODO: Still leaves the first blank row?
+            if row[1].isnumeric():
+                roomKey[row[0]] = float(row[1])
+            else:
+                roomKey[row[0]] = row[1]
     return roomKey
 
 
@@ -59,11 +62,10 @@ def construct_network(arc_data, mcnf, statics):
                 # TODO:
                 #   - Cleaner way,
                 #       - separate types of arcs into diff csv?
-                #   - Why set to 1?
                 if node[0] != 's' and node[0] != 't':
                     room_name = statics.roomKey[node[0]]
                     if room_name[0] == 'S' and node[2] == 'b':
-                        lagrange_mults[node] = 1
+                        lagrange_mults[node] = 0
 
         # Update commodityList
         if commodity not in commodityList:
@@ -144,8 +146,8 @@ def cap_constr_mapper(mcnf, statics):
                     # iterate through
                         if arc[1] == node and arc[2] == commodity:
                             pass
-                            vol_node_i.add(mcnf.varDict[arc], commodity_vols[commodity]) ## TODO: add commodidty_vols
-                vol_node_i.add(-room_caps[node[0]]) ## TODO: SUBTRACT ROOM CAPACITY
+                            vol_node_i.add(mcnf.varDict[arc], commodity_vols[commodity]) ## TODO: Double Check
+                vol_node_i.add(-room_caps[node[0]]) ## TODO: Double Check
                 cap_constrs[node] = vol_node_i
     mcnf.cap_constrs = cap_constrs
     return cap_constrs
@@ -267,61 +269,9 @@ def main(args):
     # Room ID Mapping | roomKey
     # Equipment Initial Loaction
     # Dijkstra's Matrix
-    statics.roomKey = roomKeyReader("roomDictionary.csv")
-    # TODO: move to csv
-    statics.room_caps = {
-    '1' : 1000000,
-    '2' : 1000000,
-    '3' : 1000000,
-    '4' : 1000000,
-    '5' : 1000000,
-    '6' : 1000000,
-    '7' : 1000000,
-    '8' : 1000000,
-    '9' : 1000000,
-    '10' : 1000000,
-    '11' : 1000000,
-    '12' : 1000000,
-    '13' : 1000000,
-    '14' : 1000000,
-    '15' : 1000000,
-    '16' : 1000000,
-    '17' : 1000000,
-    '18' : 1000000,
-    '19' : 1000000,
-    '20' : 1000000,
-    '21' : 1000000,
-    '22' : 1000000,
-    '23' : 1000000,
-    '24' : 1000000,
-    '25' : 1000000,
-    '26' : 1000000,
-    '27' : 1000000,
-    '28' : 1000000,
-    '29' : 1000000,
-    '30' : 1000000,
-    '31' : 1000000,
-    '32' : 1000000,
-    '33' : 1000000,
-    '34' : 1000000,
-    '35' : 1000000,
-    '36' : 1000000
-    }
-    # TODO: move to csv
-    statics.commodity_vols = {
-    'MEETING ROOM CHAIRS' : 1.0,
-    '8 X 30 TABLES' : 1.0,
-    '6 X 30 TABLES' : 1.0,
-    '8 X 18 TABLES' : 1.0,
-    '6 X 18 TABLES' : 1.0,
-    'PODIUM' : 1.0,
-    'SETS OF STAGE STEPS' : 1.0,
-    '24RISERS 6 X 8' : 1.0,
-    '66 ROUND TABLES' : 1.0,
-    '30 COCKTAIL ROUNDS' : 1.0,
-    '30 STAND-UP ROUNDS' : 1.0,
-    '16RISERS 6 X 8' : 1.0,
-    }
+    statics.roomKey = roomKeyReader("RoomDictionary.csv")
+    statics.room_caps = roomKeyReader("RoomCapacities.csv")
+    statics.commodity_vols = roomKeyReader("CommodityVolumes.csv")
 
     mcnf = DataStorage()
     mcnf.m = Model("m")
@@ -332,7 +282,7 @@ def main(args):
     cap_constr_mapper(mcnf, statics)
 
     subgradient_ascent(mcnf, statics)
-    greedy_swap(mcnf)
+    # greedy_swap(mcnf)
     # printSolution(mcnf.m)
 
 
