@@ -1,5 +1,6 @@
 from gurobipy import *
 import csv
+import math
 
 class DataStorage:
     ''' Class to store network data '''
@@ -23,14 +24,14 @@ def construct_network(arc_data, mcnf):
     Formats data into Network Components
 
     varDict - (tail, head, commodity): Gurobi Variable
-    lagrangeDict - (tail, head, commodity): Lagrange Multiplier
+    lagrange_mults - (tail, head, commodity): Lagrange Multiplier
     nodeList - List of all nodes: [(Room_ID, Time_Echelon, Dummy), ...]
     commodityList - List of commodities: [com0, ...]
 
     '''
 
     varDict = {}
-    lagrangeDict = {}
+    lagrange_mults = {}
     nodeList = []
     commodityList = []
 
@@ -50,8 +51,8 @@ def construct_network(arc_data, mcnf):
                 #   - Cleaner way,
                 #       - separate types of arcs into diff csv?
                 #   - Why set to 1?
-                if node[0][0] == "S":
-                    lagrangeDict[node] = 1
+                if node[0] not in ['s','t'] and int(node[0]) >= 27 and node[2] == 'b':
+                    lagrange_mults[node] = 1
 
         # Update commodityList
         if commodity not in commodityList:
@@ -64,7 +65,7 @@ def construct_network(arc_data, mcnf):
     mcnf.m.update()
     mcnf.unrelaxed_objective = mcnf.m.getObjective()
     mcnf.varDict = varDict
-    mcnf.lagrangeDict = lagrangeDict
+    mcnf.lagrange_mults = lagrange_mults
     mcnf.nodeList = nodeList
     mcnf.commodityList = commodityList
 
@@ -116,7 +117,7 @@ def cap_constr_mapper(mcnf, statics):
     room_caps = statics.room_caps
     cap_constrs = {}
     for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodelist, storage and not, a vs b
-        if ((node[0][0]) == "S" and node[2] == "b"):
+        if ((node[0][0]) == "S" and node[2] == "b"): # TODO: Use RoomKey!
             vol_node_i = LinExpr()
             for commodity in mcnf.commodityList:
                 for arc in mcnf.varDict: # TODO - EFFICIENCY: Can cut by only looking at (a->b for that node for all coms)
@@ -139,7 +140,7 @@ def penalty_term(mcnf):
 
     penalty = LinExpr()
     for node in mcnf.cap_constrs:
-        penalty.add(mcnf.cap_constrs[node], mcnf.lagrangeDict[node])
+        penalty.add(mcnf.cap_constrs[node], mcnf.lagrange_mults[node])
     return penalty
 
 
@@ -162,10 +163,18 @@ def update_objective(mcnf):
 def subgradient_ascent(mcnf):
     update_objective(mcnf)
     mcnf.m.optimize()
-    # counter = 0
-    # while ((|| (multiplier_(counter) - muliplier_(counter - 1))/ counter - 1) || > 0) OR (counter < ? 1,000,000 ?)):
+    # counter = 1.0 ## TODO: not sure what to initiallize this as.
+    # stepsize = math.sqrt(1/counter)
+    # vector = []
+    # print("===============================================")
+    # for node in mcnf.lagrange_mults:
+    #     steepest_ascent = mcnf.cap_constrs[node].getValue()
+    #     print(steepest_ascent)
+    #     updated_lagrange_mults[node] = max(lagrange_mults[node] + stepsize * steepest_ascent, 0)
+    #     vector.append((updated_lagrange_mults[node] - lagrange_mults[node])/counter) # TODO: not sure if this is the correct function
+    # while ((norm(vector) > 0) OR (counter < 1,000,000)):
     #   counter++
-    #   m.optimize() | solve model
+    #   m.optimize()
     #   for all node in cap_constrs:
     #       check (Ax - b)
     #           stepest_ascent = cap_constrs[node]  | [sum over k( v_k*x_ijk) - V_j  where j is the storage room node]
@@ -174,6 +183,11 @@ def subgradient_ascent(mcnf):
     #           (is max(new_mu, 0) needed?)
     #   Update objective function
 
+def norm(vector):
+    sum = 0
+    for x in vector:
+        sum += x**2
+    return math.sqrt(sum)
 
 def greedy_swap(mcnf):
     print("\nGreedy Swap\n")
@@ -238,7 +252,7 @@ if __name__ == '__main__':
 
 ################################################
 # def roomKeyReader(filename):
-# # TODO: What is this used for?
+# # TODO: REIMPLEMENT
 # #   - This is static data only used for reference.
 # #   - Shift to system_statics.py
 #     rows = csvReader(filename)
