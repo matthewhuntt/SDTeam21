@@ -18,8 +18,17 @@ def csvReader(filename):
                 rows.append(row)
     return rows
 
+def roomKeyReader(filename):
 
-def construct_network(arc_data, mcnf):
+    rows = csvReader(filename)
+    roomKey = {}
+    for row in rows[1:]:
+        if len(row) > 0:
+            roomKey[row[0]] = row[1]
+    return roomKey
+
+
+def construct_network(arc_data, mcnf, statics):
     '''
     Formats data into Network Components
 
@@ -49,11 +58,12 @@ def construct_network(arc_data, mcnf):
                 nodeList.append(node)
                 # TODO:
                 #   - Cleaner way,
-                #       - use roomKey
                 #       - separate types of arcs into diff csv?
                 #   - Why set to 1?
-                if node[0] not in ['s','t'] and int(node[0]) >= 27 and node[2] == 'b':
-                    lagrange_mults[node] = 1
+                if node[0] != 's' and node[0] != 't':
+                    room_name = statics.roomKey[node[0]]
+                    if room_name[0] == 'S' and node[2] == 'b':
+                        lagrange_mults[node] = 1
 
         # Update commodityList
         if commodity not in commodityList:
@@ -112,20 +122,31 @@ def cap_constr_mapper(mcnf, statics):
     Maps the storage room nodes to thier respective
     relaxed capacity constraints.
     Capacity Term mapping: node -> LinExpr(Ax-b)
+    Keys: Only Storage Room 'b' nodes
     '''
 
     commodity_vols = statics.commodity_vols
     room_caps = statics.room_caps
     cap_constrs = {}
     for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodelist, storage and not, a vs b
-        if ((node[0][0]) == "S" and node[2] == "b"): # TODO: Use RoomKey!
-            vol_node_i = LinExpr()
-            for commodity in mcnf.commodityList:
-                for arc in mcnf.varDict: # TODO - EFFICIENCY: Can cut by only looking at (a->b for that node for all coms)
-                    if arc[1] == node and arc[2] == commodity:
-                        vol_node_i.add(mcnf.varDict[arc], commodity_vols[commodity])
-            # vol_node_i.add(-room_caps[node]) ## TODO: SUBTRACT ROOM CAPACITY
-            cap_constrs[node] = vol_node_i
+        if node[0] != 's' and node[0] != 't': # TODO: Remove 's' and 't' nodes.
+            room_name = statics.roomKey[node[0]]
+            if room_name[0] == "S" and node[2] == "b":
+                vol_node_i = LinExpr()
+                for commodity in mcnf.commodityList:
+                    for arc in mcnf.varDict:
+                    # TODO - EFFICIENCY: Can cut by only looking
+                    # at (a->b for that node for all coms)
+                    # we want:
+                    # {((room_ID, t, a), (room_ID, t, b), k) :
+                    #            k is element of commodidtyList}
+                    # potentially cutting the # of items to
+                    # iterate through
+                        if arc[1] == node and arc[2] == commodity:
+                            pass
+                            vol_node_i.add(mcnf.varDict[arc], commodity_vols[commodity]) ## TODO: add commodidty_vols
+                vol_node_i.add(-room_caps[node[0]]) ## TODO: SUBTRACT ROOM CAPACITY
+                cap_constrs[node] = vol_node_i
     mcnf.cap_constrs = cap_constrs
     return cap_constrs
 
@@ -161,16 +182,34 @@ def update_objective(mcnf):
     return objective
 
 
-def subgradient_ascent(mcnf):
+def subgradient_ascent(mcnf, statics):
     update_objective(mcnf)
     mcnf.m.optimize()
+
     # counter = 1.0 ## TODO: not sure what to initiallize this as.
     # stepsize = math.sqrt(1/counter)
     # vector = []
-    # print("===============================================")
-    # for node in mcnf.lagrange_mults:
-    #     steepest_ascent = mcnf.cap_constrs[node].getValue()
-    #     print(steepest_ascent)
+
+    # Printing for debugging
+    print("===============================================")
+    print('ALL Rooms')
+    print("-----------------------------------------------")
+    print(list(statics.roomKey))
+    print("_______________________________________________")
+    print('ACTIVE Commodities')
+    print("-----------------------------------------------")
+    for i in range(len(mcnf.commodityList)):
+        print(str(i+1) + '. ' + mcnf.commodityList[i])
+    print("_______________________________________________")
+    print("Steepest Ascents: (Ax-b)")
+    print("-----------------------------------------------")
+    # TODO: CHECK OUTPUT. not sure this makes sense!
+    for node in mcnf.lagrange_mults:
+        steepest_ascent = mcnf.cap_constrs[node].getValue()
+        name = "({}, {}, {})".format(node[0], node[1], node[2])
+        print(name + ': ' + str(steepest_ascent))
+    print("===============================================")
+
     #     updated_lagrange_mults[node] = max(lagrange_mults[node] + stepsize * steepest_ascent, 0)
     #     vector.append((updated_lagrange_mults[node] - lagrange_mults[node])/counter) # TODO: not sure if this is the correct function
     # while ((norm(vector) > 0) OR (counter < 1,000,000)):
@@ -222,46 +261,84 @@ def printSolution(m):
 
 
 def main(args):
-    mcnf = DataStorage()
-    mcnf.m = Model("m")
-    arc_data = csvReader("MCNFDataTest.csv")
-    construct_network(arc_data, mcnf)
-
     statics = DataStorage()
     # Commodity Volume Dictionary | commodityVolDict
     # Stroage Room Capacity Dictionary | roomCapDict
     # Room ID Mapping | roomKey
     # Equipment Initial Loaction
     # Dijkstra's Matrix
+    statics.roomKey = roomKeyReader("roomDictionary.csv")
+    # TODO: move to csv
+    statics.room_caps = {
+    '1' : 1000000,
+    '2' : 1000000,
+    '3' : 1000000,
+    '4' : 1000000,
+    '5' : 1000000,
+    '6' : 1000000,
+    '7' : 1000000,
+    '8' : 1000000,
+    '9' : 1000000,
+    '10' : 1000000,
+    '11' : 1000000,
+    '12' : 1000000,
+    '13' : 1000000,
+    '14' : 1000000,
+    '15' : 1000000,
+    '16' : 1000000,
+    '17' : 1000000,
+    '18' : 1000000,
+    '19' : 1000000,
+    '20' : 1000000,
+    '21' : 1000000,
+    '22' : 1000000,
+    '23' : 1000000,
+    '24' : 1000000,
+    '25' : 1000000,
+    '26' : 1000000,
+    '27' : 1000000,
+    '28' : 1000000,
+    '29' : 1000000,
+    '30' : 1000000,
+    '31' : 1000000,
+    '32' : 1000000,
+    '33' : 1000000,
+    '34' : 1000000,
+    '35' : 1000000,
+    '36' : 1000000
+    }
+    # TODO: move to csv
+    statics.commodity_vols = {
+    'MEETING ROOM CHAIRS' : 1.0,
+    '8 X 30 TABLES' : 1.0,
+    '6 X 30 TABLES' : 1.0,
+    '8 X 18 TABLES' : 1.0,
+    '6 X 18 TABLES' : 1.0,
+    'PODIUM' : 1.0,
+    'SETS OF STAGE STEPS' : 1.0,
+    '24RISERS 6 X 8' : 1.0,
+    '66 ROUND TABLES' : 1.0,
+    '30 COCKTAIL ROUNDS' : 1.0,
+    '30 STAND-UP ROUNDS' : 1.0,
+    '16RISERS 6 X 8' : 1.0,
+    }
 
-    # TODO: What is the purpose for this?
-    # statics.roomKey = roomKeyReader("roomDictionary.csv")
-    statics.room_caps = {"1": 10000}
-    statics.commodity_vols = {"1": 2, "2": 3}
+    mcnf = DataStorage()
+    mcnf.m = Model("m")
+    arc_data = csvReader("MCNFDataTest.csv")
+    construct_network(arc_data, mcnf, statics)
 
     flow_constraints(mcnf)
     cap_constr_mapper(mcnf, statics)
 
-    subgradient_ascent(mcnf)
+    subgradient_ascent(mcnf, statics)
     greedy_swap(mcnf)
-    printSolution(mcnf.m)
+    # printSolution(mcnf.m)
 
 
 if __name__ == '__main__':
     import sys
     main(sys.argv)
-
-################################################
-# def roomKeyReader(filename):
-# # TODO: REIMPLEMENT
-# #   - This is static data only used for reference.
-# #   - Shift to system_statics.py
-#     rows = csvReader(filename)
-#     roomKey = {}
-#     for row in rows[1:]:
-#         if len(row) > 0:
-#             roomKey[row[0]] = row[1]
-#     return roomKey
 
 ################################################
 # unrelaxed_objective taken after all vars added in
