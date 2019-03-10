@@ -49,6 +49,7 @@ def construct_network(arc_data, mcnf):
                 nodeList.append(node)
                 # TODO:
                 #   - Cleaner way,
+                #       - use roomKey
                 #       - separate types of arcs into diff csv?
                 #   - Why set to 1?
                 if node[0] not in ['s','t'] and int(node[0]) >= 27 and node[2] == 'b':
