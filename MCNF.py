@@ -14,7 +14,8 @@ def csvReader(filename):
         reader = csv.reader(f)
         rows = []
         for row in reader:
-            if len(row) > 0: # Handles Empty Lines from OS swap
+            if any(row) > 0: # Handles Empty Lines from OS swap
+                # print(row)
                 rows.append(row)
     return rows
 
@@ -23,11 +24,10 @@ def roomKeyReader(filename):
     rows = csvReader(filename)
     roomKey = {}
     for row in rows[1:]:
-        if len(row) > 0: # TODO: Still leaves the first blank row?
-            if row[1].isnumeric():
-                roomKey[row[0]] = float(row[1])
-            else:
-                roomKey[row[0]] = row[1]
+        if row[1].isnumeric():
+            roomKey[row[0]] = float(row[1])
+        else:
+            roomKey[row[0]] = row[1]
     return roomKey
 
 
@@ -277,6 +277,18 @@ def main(args):
     statics.roomKey = roomKeyReader("RoomDictionary.csv")
     statics.room_caps = roomKeyReader("RoomCapacities.csv")
     statics.commodity_vols = roomKeyReader("CommodityVolumes.csv")
+
+    # print("Room Key")
+    # for x in statics.roomKey:
+    #     print(str(x) + ": " + str(statics.roomKey[x]))
+
+    # print("Room Caps")
+    # for x in statics.room_caps:
+    #     print(str(x) + ": " + str(statics.room_caps[x]))
+
+    # print("Commodity Volumes")
+    # for x in statics.commodity_vols:
+    #     print(str(x) + ": " + str(statics.commodity_vols[x]))
 
     # mcnf is used to store mutable data about the current
     # state fo the optimization model, including:
