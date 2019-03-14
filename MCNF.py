@@ -7,28 +7,31 @@ class DataStorage:
     pass
 
 
-def csvReader(filename):
-    '''Reads csv file and returns non-empty rows.'''
+def arcReader(filename):
+    '''Reads arc csv file and returns list of non-empty rows.'''
 
+    rows = []
     with open (filename, "r") as f:
         reader = csv.reader(f)
-        rows = []
         for row in reader:
-            if any(row) > 0: # Handles Empty Lines from OS swap
-                # print(row)
+            if any(row): # Handles Empty Lines from OS swap
                 rows.append(row)
     return rows
 
-def roomKeyReader(filename):
-    # TODO: Generalize! Mix with CSV reader?
-    rows = csvReader(filename)
-    roomKey = {}
-    for row in rows[1:]:
-        if row[1].isnumeric():
-            roomKey[row[0]] = float(row[1])
-        else:
-            roomKey[row[0]] = row[1]
-    return roomKey
+def csvReader(filename):
+    '''Reads csv data into a dictionary. '''
+
+    csv_data = {}
+    with open (filename, "r") as f:
+        reader = csv.reader(f)
+        next(reader) # Handles Table Headers
+        for row in reader:
+            if any(row): # Handles Empty Lines from OS swap
+                if row[1].isnumeric():
+                    csv_data[row[0]] = float(row[1])
+                else:
+                    csv_data[row[0]] = row[1]
+    return csv_data
 
 
 def construct_network(arc_data, mcnf, statics):
@@ -103,8 +106,8 @@ def flow_constraints(mcnf):
     # TODO: Read through, document and reformat if needed.
     for commodity in mcnf.commodityList:
         for node in mcnf.nodeList:
-            # TODO: Remove S and T,
-            #   - they just force us to have another echelon
+            # TODO: Remove S node,
+            #   - it just forces us to have another echelon
             #   - can pull initial locations from csv table
             if node[0] != "s" and (node[0] != "t"):
                 inDict = {}
@@ -131,7 +134,7 @@ def cap_constr_mapper(mcnf, statics):
     room_caps = statics.room_caps
     cap_constrs = {}
     for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodelist, storage and not, a vs b
-        if node[0] != 's' and node[0] != 't': # TODO: Remove 's' and 't' nodes.
+        if node[0] != 's' and node[0] != 't': # TODO: Remove 's' node.
             room_name = statics.roomKey[node[0]]
             if room_name[0] == "S" and node[2] == "b":
                 vol_node_i = LinExpr()
@@ -185,6 +188,12 @@ def update_objective(mcnf):
 
 
 def subgradient_ascent(mcnf, statics):
+    '''
+    Solves optimization model using a subgradient ascent
+    algorithm, by itteratively solving and updating a
+    relaxed formulation of the model.
+    '''
+
     update_objective(mcnf)
     mcnf.m.optimize()
 
@@ -192,25 +201,24 @@ def subgradient_ascent(mcnf, statics):
     # stepsize = math.sqrt(1/counter)
     # vector = []
 
-    # Printing for debugging
-    print("===============================================")
-    print('ALL Rooms')
-    print("-----------------------------------------------")
-    print(list(statics.roomKey))
-    print("_______________________________________________")
-    print('ACTIVE Commodities')
-    print("-----------------------------------------------")
-    for i in range(len(mcnf.commodityList)):
-        print(str(i+1) + '. ' + mcnf.commodityList[i])
-    print("_______________________________________________")
-    print("Steepest Ascents: (Ax-b)")
-    print("-----------------------------------------------")
-    # TODO: CHECK OUTPUT. not sure this makes sense!
-    for node in mcnf.lagrange_mults:
-        steepest_ascent = mcnf.cap_constrs[node].getValue()
-        name = "({}, {}, {})".format(node[0], node[1], node[2])
-        print(name + ': ' + str(steepest_ascent))
-    print("===============================================")
+# Prints for debugging
+    # print("===============================================")
+    # print('ALL Rooms')
+    # print("-----------------------------------------------")
+    # print(list(statics.roomKey))
+    # print("_______________________________________________")
+    # print('ACTIVE Commodities')
+    # print("-----------------------------------------------")
+    # for i in range(len(mcnf.commodityList)):
+    #     print(str(i+1) + '. ' + mcnf.commodityList[i])
+    # print("_______________________________________________")
+    # print("Steepest Ascents: (Ax-b)")
+    # print("-----------------------------------------------")
+    # for node in mcnf.lagrange_mults:
+    #     steepest_ascent = mcnf.cap_constrs[node].getValue()
+    #     name = "({}, {}, {})".format(node[0], node[1], node[2])
+    #     print(name + ': ' + str(steepest_ascent))
+    # print("===============================================")
 
     #     updated_lagrange_mults[node] = max(lagrange_mults[node] + stepsize * steepest_ascent, 0)
     #     vector.append((updated_lagrange_mults[node] - lagrange_mults[node])/counter) # TODO: not sure if this is the correct function
@@ -233,6 +241,12 @@ def norm(vector):
     return math.sqrt(sum)
 
 def greedy_swap(mcnf):
+    '''
+    Enforces capacity constrants by swapping equipment
+    allocations from storage rooms over capacity to rooms
+    under capacity.
+    '''
+
     print("\nGreedy Swap\n")
     #  pull all storage nodes in a single echelon
     #  check Ax - b:
@@ -274,21 +288,21 @@ def main(args):
     #
     # Only used for reference.
     statics = DataStorage()
-    statics.roomKey = roomKeyReader("RoomDictionary.csv")
-    statics.room_caps = roomKeyReader("RoomCapacities.csv")
-    statics.commodity_vols = roomKeyReader("CommodityVolumes.csv")
+    statics.roomKey = csvReader("RoomDictionary.csv")
+    statics.room_caps = csvReader("RoomCapacities.csv")
+    statics.commodity_vols = csvReader("CommodityVolumes.csv")
 
-    # print("Room Key")
+# Prints for Debugging
+    # print("\nRoom Key")
     # for x in statics.roomKey:
     #     print(str(x) + ": " + str(statics.roomKey[x]))
-
-    # print("Room Caps")
+    # print("\nRoom Caps")
     # for x in statics.room_caps:
     #     print(str(x) + ": " + str(statics.room_caps[x]))
-
-    # print("Commodity Volumes")
+    # print("\nCommodity Volumes")
     # for x in statics.commodity_vols:
     #     print(str(x) + ": " + str(statics.commodity_vols[x]))
+    # print()
 
     # mcnf is used to store mutable data about the current
     # state fo the optimization model, including:
@@ -301,9 +315,10 @@ def main(args):
     #   - Mapping of storage nodes to thier Capacity Constraints | cap_constrs
     #
     # To be updated as the state of the model changes.
+
     mcnf = DataStorage()
     mcnf.m = Model("m")
-    arc_data = csvReader("MCNFDataTest.csv")
+    arc_data = arcReader("MCNFDataTest.csv")
     construct_network(arc_data, mcnf, statics)
 
     flow_constraints(mcnf)
