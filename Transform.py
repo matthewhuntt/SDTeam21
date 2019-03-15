@@ -171,7 +171,7 @@ def auxiliaryWriter(roomDict, filename):
 def main(args):
     #(echelon_dict, eventRoomList, itemList, requirementDict) = setupDataReader("SetupData.csv")
     cost_dict = costDataReader("CostData.csv")
-    (inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict) = currentStateReader("Equipment Inventory.xlsx")
+    (inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict) = currentStateReader("EquipmentInventory.xlsx")
     print(inventory_dict)
     print("\n\n")
     print(requirement_dict)
