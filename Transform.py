@@ -162,6 +162,7 @@ def arcDictWriter(arcDict, filename):
 
 def excelWriter(arcDict, filename, sheet_name):
     arcList = []
+    arcList.append(["Xi", "Yi", "Zi", "Xj", "Yj", "Zj", "Item", "Lij", "Uij", "Cij"])
     for arc in arcDict.keys():
         arcList.append([arc[0][0], arc[0][1], arc[0][2], arc[1][0], arc[1][1],
             arc[1][2], arc[2], arcDict[arc][0], arcDict[arc][1], arcDict[arc][2]])
@@ -172,7 +173,7 @@ def excelWriter(arcDict, filename, sheet_name):
     writer = pd.ExcelWriter("EquipmentInventory.xlsx", engine='openpyxl')
     writer.book = book
     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-    df.to_excel(writer, sheet_name=sheet_name, index=False, index_label=False)
+    df.to_excel(writer, sheet_name=sheet_name, index=False, index_label=False, header=False)
     writer.save()
     return None
 
