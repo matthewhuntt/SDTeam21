@@ -73,11 +73,10 @@ def currentStateReader(filename):
     return(inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict)
 
 def costDataReader(filename):
-    with open(filename, "r") as f:
-        reader = csv.reader(f)
-        rows = []
-        for row in reader:
-            rows.append(row)
+    xl = pd.ExcelFile(filename)
+    df = xl.parse("Cost Data", header=None)
+    rows = df.values.tolist()
+    print(rows)
     cost_dict = {}
     for rowIndex in range (1, len(rows)):
         for columnIndex in range (1, len(rows)):
@@ -98,7 +97,12 @@ def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict
     #   event_req_arc_dict      All a to b event requirement arcs (givens)
     #   utility_arc_dict        All arcs originating at the s node or between t nodes (givens)
 
-    storageRoomList = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10"]
+    storageRoomList = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10",
+            "S11", "S12", "S13", "S14", "S15", "S16", "S17", "S18", "S19", "S20",
+            "S21", "S22", "S23", "S24", "S25", "S26", "S27", "S28", "S29", "S30",
+            "S31", "S32", "S33", "S34", "S35", "S36", "S37", "S38", "S39", "S40",
+            "S41", "S42", "S43", "S44", "S45", "S46", "S47", "S48", "S49", "S50",
+            "S51", "S52", "S53", "S54", "S55", "S56", "S57", "S58", "S59"]
     allRoomList = eventRoomList + storageRoomList
     roomDict = {}
     for i in range (len(allRoomList)):
@@ -193,17 +197,18 @@ def auxiliaryWriter(roomDict, filename, sheet_name):
 
 def main(args):
     #(echelon_dict, eventRoomList, itemList, requirementDict) = setupDataReader("SetupData.csv")
-    cost_dict = costDataReader("CostData.csv")
+    cost_dict = costDataReader("EquipmentInventory.xlsx")
+    #print(cost_dict)
     (inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict) = currentStateReader("EquipmentInventory.xlsx")
-    print(inventory_dict)
-    print("\n\n")
-    print(requirement_dict)
-    print("\n\n")
-    print(echelon_dict)
-    print("\n\n")
-    print(event_room_list)
-    print("\n\n")
-    print(item_list)
+    # print(inventory_dict)
+    # print("\n\n")
+    # print(requirement_dict)
+    # print("\n\n")
+    # print(echelon_dict)
+    # print("\n\n")
+    # print(event_room_list)
+    # print("\n\n")
+    # print(item_list)
 
     movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, room_dict = constructor(echelon_dict, event_room_list, item_list, cost_dict, requirement_dict, inventory_dict)
     arcDictWriter(movement_arc_dict, "MovementArcs.csv")
