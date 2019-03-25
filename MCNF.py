@@ -1,6 +1,7 @@
 from gurobipy import *
 import csv
 import math
+import time
 
 class DataStorage:
     '''Class to store network data.'''
@@ -46,44 +47,59 @@ def construct_network(arc_data, mcnf, statics):
     '''
 
     varDict = {}
+
     lagrange_mults = {}
     nodeList = []
     commodityList = []
 
-    for row in arc_data[1:]: # Removes Header
-        tail = (row[0], row[1], row[2]) # Origin Node
-        head = (row[3], row[4], row[5]) # Destination Node
-        commodity = row[6]              # Equipment Type
-        lb = float(row[7])     # Lower Bound of Arc
-        ub = float(row[8])     # Upper Bound of Arc
-        cost = float(row[9])   # Cost/unit of Arc
+    for arc_type in arc_data:
+        var_partition = {}
+        arc_rows = arc_data[arc_type]
+        for row in arc_rows[1:]: # Removes Header
+            tail = (row[0], row[1], row[2]) # Origin Node
+            head = (row[3], row[4], row[5]) # Destination Node
+            commodity = row[6]              # Equipment Type
+            lb = float(row[7])     # Lower Bound of Arc
+            ub = float(row[8])     # Upper Bound of Arc
+            cost = float(row[9])   # Cost/unit of Arc
 
-        # Update nodeList:
-        for node in [tail, head]:
-            if node not in nodeList:
-                nodeList.append(node)
-                # TODO:
-                #   - Cleaner way,
-                #       - separate types of arcs into diff csv?
-                if node[0] != 's' and node[0] != 't':
-                    room_name = statics.roomKey[node[0]]
-                    if room_name[0] == 'S' and node[2] == 'b':
-                        lagrange_mults[node] = 0
+            # Update nodeList:
+            for node in [tail, head]:
+                if node not in nodeList:
+                    nodeList.append(node)
+                    if node[0] != 's' and node[0] != 't':
+                        room_name = statics.roomKey[node[0]]
+                        if room_name[0] == 'S' and node[2] == 'b':
+                            lagrange_mults[node] = 0
 
-        # Update commodityList
-        if commodity not in commodityList:
-            commodityList.append(commodity)
+            # Update commodityList
+            if commodity not in commodityList:
+                commodityList.append(commodity)
+
+            # Updates var_partition
+            arc = (tail, head, commodity)
+            var_partition[arc] = makeVar(mcnf.m, arc, lb, ub, cost)
 
         # Updates varDict
-        arc = (tail, head, commodity)
-        varDict[arc] = makeVar(mcnf.m, arc, lb, ub, cost)
+        varDict[arc_type] = var_partition
+
+
 
     mcnf.m.update()
     mcnf.unrelaxed_objective = mcnf.m.getObjective()
-    mcnf.varDict = varDict
     mcnf.lagrange_mults = lagrange_mults
+
+    mcnf.varDict = varDict
+    # for x in varDict:
+    #     print(x.upper())
+    #     for y in varDict[x]:
+    #         print(varDict[x][y].VarName)
     mcnf.nodeList = nodeList
+    # for x in nodeList:
+    #     print(str(x))
     mcnf.commodityList = commodityList
+    # for x in commodityList:
+    #     print(str(x))
 
 
 def makeVar(m, arc, lb, ub, cost):
@@ -106,20 +122,19 @@ def flow_constraints(mcnf):
     # TODO: Read through, document and reformat if needed.
     for commodity in mcnf.commodityList:
         for node in mcnf.nodeList:
-            # TODO: Remove S node,
-            #   - it just forces us to have another echelon
-            #   - can pull initial locations from csv table
-            if node[0] != "s" and (node[0] != "t"):
+            if (node[0] != "s") and (node[0] != "t"):
                 inDict = {}
                 outDict = {}
-                for arc in mcnf.varDict:
-                    if (arc[1] == node) and (arc[2] == commodity):
-                        inDict[arc] = mcnf.varDict[arc]
-                    elif (arc[0] == node) and (arc[2] == commodity):
-                        outDict[arc] = mcnf.varDict[arc]
-                inDict = tupledict(inDict)
-                outDict = tupledict(outDict)
-                mcnf.m.addConstr(inDict.sum() == outDict.sum())
+                if True: # TODO: Clean up the Search
+                    for arc_type in mcnf.varDict:
+                        for arc in mcnf.varDict[arc_type]:
+                            if (arc[1] == node) and (arc[2] == commodity):
+                                inDict[arc] = mcnf.varDict[arc_type][arc]
+                            elif (arc[0] == node) and (arc[2] == commodity):
+                                outDict[arc] = mcnf.varDict[arc_type][arc]
+                    inDict = tupledict(inDict)
+                    outDict = tupledict(outDict)
+                    mcnf.m.addConstr(inDict.sum() == outDict.sum())
 
 
 def cap_constr_mapper(mcnf, statics):
@@ -131,6 +146,9 @@ def cap_constr_mapper(mcnf, statics):
     '''
 
     commodity_vols = statics.commodity_vols
+    # for x in statics.commodity_vols:
+    #     print(x +': '+ str(statics.commodity_vols[x]))
+
     room_caps = statics.room_caps
     cap_constrs = {}
     for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodelist, storage and not, a vs b
@@ -139,7 +157,8 @@ def cap_constr_mapper(mcnf, statics):
             if room_name[0] == "S" and node[2] == "b":
                 vol_node_i = LinExpr()
                 for commodity in mcnf.commodityList:
-                    for arc in mcnf.varDict:
+                    for arc_type in mcnf.varDict:
+                        for arc in mcnf.varDict[arc_type]:
                     # TODO - EFFICIENCY: Can cut by only looking
                     # at (a->b for that node for all coms)
                     # we want:
@@ -147,12 +166,23 @@ def cap_constr_mapper(mcnf, statics):
                     #            k is element of commodidtyList}
                     # potentially cutting the # of items to
                     # iterate through
-                        if arc[1] == node and arc[2] == commodity:
-                            pass
-                            vol_node_i.add(mcnf.varDict[arc], commodity_vols[commodity]) ## TODO: Double Check
+                            if arc[1] == node and arc[2] == commodity:
+                                # pass
+                                vol_node_i.add(mcnf.varDict[arc_type][arc], commodity_vols[commodity]) ## TODO: Double Check
                 vol_node_i.add(-room_caps[node[0]]) ## TODO: Double Check
                 cap_constrs[node] = vol_node_i
     mcnf.cap_constrs = cap_constrs
+    # for x in cap_constrs:
+    #     string = ''
+    #     for i in range(cap_constrs[x].size()):
+    #         if i > 0:
+    #             string = string + ' + '
+    #         string = string + str(cap_constrs[x].getCoeff(i)) + ' * ' + str(cap_constrs[x].getVar(i).VarName)
+    #     if cap_constrs[x].getConstant() > 0:
+    #         string = string + ' + ' + str(cap_constrs[x].getConstant())
+    #     elif cap_constrs[x].getConstant() < 0:
+    #         string = string + ' - ' + str(abs(cap_constrs[x].getConstant()))
+    #     print(string)
     return cap_constrs
 
 
@@ -194,12 +224,38 @@ def subgradient_ascent(mcnf, statics):
     relaxed formulation of the model.
     '''
 
+    start = time.time()
     update_objective(mcnf)
+    mcnf.m.setParam('OutputFlag', 0)
     mcnf.m.optimize()
 
-    # counter = 1.0 ## TODO: not sure what to initiallize this as.
-    # stepsize = math.sqrt(1/counter)
-    # vector = []
+    counter = 1
+    while counter < 100000:
+        stepsize = math.sqrt(1/counter)
+        opt_check_vector = []
+        updated_lagrange_mults = {}
+        for node in mcnf.lagrange_mults:
+            steepest_ascent = mcnf.cap_constrs[node].getValue()
+            updated_lagrange_mults[node] = max(mcnf.lagrange_mults[node] + stepsize * steepest_ascent, 0)
+            opt_check_vector.append((updated_lagrange_mults[node] - mcnf.lagrange_mults[node])/counter)
+        if norm(opt_check_vector) > 0 : # TODO: Check Logic
+            # print('\n--------------------------------------')
+            print('Iteration #' + str(counter) + ': ' + str(norm(opt_check_vector)))
+            # print('--------------------------------------\n')
+
+            mcnf.lagrange_mults = updated_lagrange_mults
+            update_objective(mcnf)
+            mcnf.m.optimize()
+            counter += 1
+        else:
+            break
+    print('--------------------------------------\n')
+    print('Iteration #' + str(counter) + ': ' + str(norm(opt_check_vector)))
+    end = time.time()
+    print(end - start)
+    mcnf.m.setParam('OutputFlag', 1)
+    mcnf.m.optimize()
+
 
 # Prints for debugging
     # print("===============================================")
@@ -220,8 +276,8 @@ def subgradient_ascent(mcnf, statics):
     #     print(name + ': ' + str(steepest_ascent))
     # print("===============================================")
 
-    #     updated_lagrange_mults[node] = max(lagrange_mults[node] + stepsize * steepest_ascent, 0)
-    #     vector.append((updated_lagrange_mults[node] - lagrange_mults[node])/counter) # TODO: not sure if this is the correct function
+        # updated_lagrange_mults[node] = max(lagrange_mults[node] + stepsize * steepest_ascent, 0)
+        # vector.append((updated_lagrange_mults[node] - lagrange_mults[node])/counter) # TODO: not sure if this is the correct function
     # while ((norm(vector) > 0) OR (counter < 1,000,000)):
     #   counter++
     #   m.optimize()
@@ -276,6 +332,12 @@ def printSolution(m):
     else:
         print('No solution;', m.status)
 
+# def outputCsv(mcnf):
+#     g_vars = mcnf.movement_arcs
+#     with open('movement_schedule.csv', mode='w') as schedule_file:
+#         employee_writer = csv.writer(schedule_file, delimiter=',') # other params? , quotechar='"', quoting=csv.QUOTE_MINIMAL)
+#         for var in g_vars:
+#             schedule_writer.writerow()
 
 def main(args):
     # statics is used to store inmutable data from the
@@ -291,6 +353,8 @@ def main(args):
     statics.roomKey = csvReader("RoomDictionary.csv")
     statics.room_caps = csvReader("RoomCapacities.csv")
     statics.commodity_vols = csvReader("CommodityVolumes.csv")
+    # for x in statics.commodity_vols:
+    #     print(x +': '+ str(statics.commodity_vols[x]))
 
 # Prints for Debugging
     # print("\nRoom Key")
@@ -315,10 +379,14 @@ def main(args):
     #   - Mapping of storage nodes to thier Capacity Constraints | cap_constrs
     #
     # To be updated as the state of the model changes.
+    arc_data = {}
+    arc_data["utility"] = arcReader("UtilityArcs.csv")
+    arc_data["movement"] = arcReader("MovementArcs.csv")
+    arc_data["event_req"] = arcReader("EventRequirementArcs.csv")
+    arc_data["storage_cap"] = arcReader("StorageCapacityArcs.csv")
 
     mcnf = DataStorage()
     mcnf.m = Model("m")
-    arc_data = arcReader("MCNFDataTest.csv")
     construct_network(arc_data, mcnf, statics)
 
     flow_constraints(mcnf)
