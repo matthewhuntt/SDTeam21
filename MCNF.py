@@ -2,6 +2,8 @@ from gurobipy import *
 import csv
 import math
 import time
+import pandas as pd
+from openpyxl import load_workbook
 
 class DataStorage:
     '''Class to store network data.'''
@@ -34,6 +36,26 @@ def csvReader(filename):
                     csv_data[row[0]] = row[1]
     return csv_data
 
+def excelReader(filename, sheet_name):
+    '''Reads supporting data from master excel file into a dictionary'''
+
+    excel_data = {}
+    xl = pd.ExcelFile(filename)
+    inventory_df = xl.parse(sheet_name)
+    inventory_rows = inventory_df.values.tolist()
+    if sheet_name == 'Commodities':
+        for row in inventory_rows:
+            if any(row): # Handles Empty Lines from OS swap
+                excel_data[row[0]] = row[1]
+    if sheet_name == 'Storage Rooms':
+        for row in inventory_rows:
+            if any(row): # Handles Empty Lines from OS swap
+                excel_data[row[0]] = row[3]
+    if sheet_name == 'Room Dictionary':
+        for row in inventory_rows:
+            if any(row): # Handles Empty Lines from OS swap
+                excel_data[str(row[0])] = row[1]
+    return excel_data
 
 def construct_network(arc_data, mcnf, statics):
     '''
@@ -350,9 +372,15 @@ def main(args):
     #
     # Only used for reference.
     statics = DataStorage()
-    statics.roomKey = csvReader("RoomDictionary.csv")
-    statics.room_caps = csvReader("RoomCapacities.csv")
-    statics.commodity_vols = csvReader("CommodityVolumes.csv")
+    #statics.roomKey = csvReader("RoomDictionary.csv")
+    #statics.room_caps = csvReader("RoomCapacities.csv")
+    #statics.commodity_vols = csvReader("CommodityVolumes.csv")
+    statics.roomKey = excelReader("EquipmentInventory.xlsx", "Room Dictionary")
+    statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
+    statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
+    print(statics.room_caps)
+    print(statics.commodity_vols)
+    print(statics.roomKey)
     # for x in statics.commodity_vols:
     #     print(x +': '+ str(statics.commodity_vols[x]))
 
@@ -392,9 +420,9 @@ def main(args):
     flow_constraints(mcnf)
     cap_constr_mapper(mcnf, statics)
 
-    subgradient_ascent(mcnf, statics)
+    #subgradient_ascent(mcnf, statics)
     # greedy_swap(mcnf)
-    # printSolution(mcnf.m)
+    printSolution(mcnf.m)
 
 
 if __name__ == '__main__':
