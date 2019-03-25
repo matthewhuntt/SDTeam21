@@ -186,7 +186,7 @@ def cap_constr_mapper(mcnf, statics):
                     # iterate through
                             if arc[1] == node and arc[2] == commodity:
                                 vol_node_i.add(mcnf.varDict[arc_type][arc], commodity_vols[commodity])
-                vol_node_i.add(-room_caps[node[0]])
+                vol_node_i.add(-room_caps[statics.roomKey[node[0]]])
                 cap_constrs[node] = vol_node_i
     mcnf.cap_constrs = cap_constrs
 
