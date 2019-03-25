@@ -217,7 +217,7 @@ def update_objective(mcnf):
     return objective
 
 
-def subgradient_ascent(mcnf, statics):
+def subgradient_ascent(mcnf, statics, iterations=10000):
     '''
     Solves optimization model using a subgradient ascent
     algorithm, by itteratively solving and updating a
@@ -230,7 +230,7 @@ def subgradient_ascent(mcnf, statics):
     mcnf.m.optimize()
 
     counter = 1
-    while counter < 100000:
+    while counter < iterations:
         stepsize = math.sqrt(1/counter)
         opt_check_vector = []
         updated_lagrange_mults = {}
@@ -240,7 +240,7 @@ def subgradient_ascent(mcnf, statics):
             opt_check_vector.append((updated_lagrange_mults[node] - mcnf.lagrange_mults[node])/counter)
         if norm(opt_check_vector) > 0 : # TODO: Check Logic
             # print('\n--------------------------------------')
-            print('Iteration #' + str(counter) + ': ' + str(norm(opt_check_vector)))
+            # print('Iteration #' + str(counter) + ': ' + str(norm(opt_check_vector)))
             # print('--------------------------------------\n')
 
             mcnf.lagrange_mults = updated_lagrange_mults
@@ -249,12 +249,12 @@ def subgradient_ascent(mcnf, statics):
             counter += 1
         else:
             break
-    print('--------------------------------------\n')
-    print('Iteration #' + str(counter) + ': ' + str(norm(opt_check_vector)))
+    # print('--------------------------------------\n')
+    # print('Iteration #' + str(counter) + ': ' + str(norm(opt_check_vector)))
     end = time.time()
-    print(end - start)
-    mcnf.m.setParam('OutputFlag', 1)
-    mcnf.m.optimize()
+    print('Subgradient Time: ' + str(end - start))
+    # mcnf.m.setParam('OutputFlag', 1)
+    # mcnf.m.optimize()
 
 
 # Prints for debugging
@@ -302,8 +302,17 @@ def greedy_swap(mcnf):
     allocations from storage rooms over capacity to rooms
     under capacity.
     '''
-
     print("\nGreedy Swap\n")
+    for node in mcnf.lagrange_mults:
+        axb = mcnf.cap_constrs[node].getValue()
+        if axb < 0:
+            print('Room '+ str(node[0]) + ' is under capacity by ' + str(axb) + ' units in time echelon ' + str(node[1]) +'.')
+        elif axb > 0:
+            print('Room '+ str(node[0]) + ' is over capacity by ' + str(axb) + ' units in time echelon ' + str(node[1]) +'.')
+        else:
+            print('Room '+ str(node[0]) + ' is at capacity in time echelon ' + str(node[1]) +'.')
+
+
     #  pull all storage nodes in a single echelon
     #  check Ax - b:
     #      if Ax-b > 0, then over capacity
@@ -314,12 +323,11 @@ def greedy_swap(mcnf):
     #      Assignment optimization model?
 
 
-def printSolution(m):
-    if m.status == GRB.Status.OPTIMAL:
-        print('\nObjective Value: %g' % m.objVal)
-        for var in m.getVars():
-            if var.X > 0.0:
-                # TODO: remove dummy arcs
+def printSolution(mcnf):
+    if mcnf.m.status == GRB.Status.OPTIMAL:
+        print('\nObjective Value: %g' % mcnf.m.objVal)
+        for var in mcnf.varDict['movement']:
+            if mcnf.varDict['movement'][var].X > 0.0:
                 # TODO: Convert Echelons to Time
                 # TODO: Order by:
                 #           - Time
@@ -328,7 +336,7 @@ def printSolution(m):
                 #
                 # Schedule:
                 # Time, origin, destination, commodity, quantity
-                print("{:<55s}| {:>8.0f}".format(var.VarName, var.X))
+                print("{:<60s}| {:>8.0f}".format(str(var), mcnf.varDict['movement'][var].X))
     else:
         print('No solution;', m.status)
 
@@ -353,8 +361,6 @@ def main(args):
     statics.roomKey = csvReader("RoomDictionary.csv")
     statics.room_caps = csvReader("RoomCapacities.csv")
     statics.commodity_vols = csvReader("CommodityVolumes.csv")
-    # for x in statics.commodity_vols:
-    #     print(x +': '+ str(statics.commodity_vols[x]))
 
 # Prints for Debugging
     # print("\nRoom Key")
@@ -392,9 +398,10 @@ def main(args):
     flow_constraints(mcnf)
     cap_constr_mapper(mcnf, statics)
 
-    subgradient_ascent(mcnf, statics)
-    # greedy_swap(mcnf)
-    # printSolution(mcnf.m)
+    # subgradient_ascent(mcnf, statics)
+    subgradient_ascent(mcnf, statics, 100) # REDUCED ITERATION COUNT FOR TESTING
+    greedy_swap(mcnf)
+    # printSolution(mcnf)
 
 
 if __name__ == '__main__':
