@@ -191,7 +191,7 @@ def cap_constr_mapper(mcnf, statics):
                             if arc[1] == node and arc[2] == commodity:
                                 # pass
                                 vol_node_i.add(mcnf.varDict[arc_type][arc], commodity_vols[commodity]) ## TODO: Double Check
-                vol_node_i.add(-room_caps[node[0]]) ## TODO: Double Check
+                vol_node_i.add(-room_caps[statics.roomKey[node[0]]]) ## TODO: Double Check
                 cap_constrs[node] = vol_node_i
     mcnf.cap_constrs = cap_constrs
     # for x in cap_constrs:
