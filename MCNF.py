@@ -83,24 +83,23 @@ def construct_network(arc_data, mcnf, statics):
         # Updates varDict
         varDict[arc_type] = var_partition
 
-
-
     mcnf.m.update()
     mcnf.unrelaxed_objective = mcnf.m.getObjective()
     mcnf.lagrange_mults = lagrange_mults
 
     mcnf.varDict = varDict
+    mcnf.nodeList = nodeList
+    mcnf.commodityList = commodityList
+
+# Prints for debugging
     # for x in varDict:
     #     print(x.upper())
     #     for y in varDict[x]:
     #         print(varDict[x][y].VarName)
-    mcnf.nodeList = nodeList
     # for x in nodeList:
     #     print(str(x))
-    mcnf.commodityList = commodityList
     # for x in commodityList:
     #     print(str(x))
-
 
 def makeVar(m, arc, lb, ub, cost):
     '''Creates Gurobi Variable and adds it to the model.'''
@@ -119,7 +118,7 @@ def flow_constraints(mcnf):
     network, and adds them to the model.
     '''
 
-    # TODO: Read through, document and reformat if needed.
+    # TODO: Clean and Document
     for commodity in mcnf.commodityList:
         for node in mcnf.nodeList:
             if (node[0] != "s") and (node[0] != "t"):
@@ -146,9 +145,6 @@ def cap_constr_mapper(mcnf, statics):
     '''
 
     commodity_vols = statics.commodity_vols
-    # for x in statics.commodity_vols:
-    #     print(x +': '+ str(statics.commodity_vols[x]))
-
     room_caps = statics.room_caps
     cap_constrs = {}
     for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodelist, storage and not, a vs b
@@ -167,11 +163,12 @@ def cap_constr_mapper(mcnf, statics):
                     # potentially cutting the # of items to
                     # iterate through
                             if arc[1] == node and arc[2] == commodity:
-                                # pass
-                                vol_node_i.add(mcnf.varDict[arc_type][arc], commodity_vols[commodity]) ## TODO: Double Check
-                vol_node_i.add(-room_caps[node[0]]) ## TODO: Double Check
+                                vol_node_i.add(mcnf.varDict[arc_type][arc], commodity_vols[commodity])
+                vol_node_i.add(-room_caps[node[0]])
                 cap_constrs[node] = vol_node_i
     mcnf.cap_constrs = cap_constrs
+
+# Prints for debugging
     # for x in cap_constrs:
     #     string = ''
     #     for i in range(cap_constrs[x].size()):
@@ -183,6 +180,7 @@ def cap_constr_mapper(mcnf, statics):
     #     elif cap_constrs[x].getConstant() < 0:
     #         string = string + ' - ' + str(abs(cap_constrs[x].getConstant()))
     #     print(string)
+
     return cap_constrs
 
 
@@ -223,7 +221,7 @@ def subgradient_ascent(mcnf, statics, iterations=10000):
     algorithm, by itteratively solving and updating a
     relaxed formulation of the model.
     '''
-
+# TODO: Clean and Document
     start = time.time()
     update_objective(mcnf)
     mcnf.m.setParam('OutputFlag', 0)
@@ -239,6 +237,7 @@ def subgradient_ascent(mcnf, statics, iterations=10000):
             updated_lagrange_mults[node] = max(mcnf.lagrange_mults[node] + stepsize * steepest_ascent, 0)
             opt_check_vector.append((updated_lagrange_mults[node] - mcnf.lagrange_mults[node])/counter)
         if norm(opt_check_vector) > 0 : # TODO: Check Logic
+        # Prints for debugging
             # print('\n--------------------------------------')
             # print('Iteration #' + str(counter) + ': ' + str(norm(opt_check_vector)))
             # print('--------------------------------------\n')
@@ -249,35 +248,15 @@ def subgradient_ascent(mcnf, statics, iterations=10000):
             counter += 1
         else:
             break
+# Prints for debugging
     # print('--------------------------------------\n')
     # print('Iteration #' + str(counter) + ': ' + str(norm(opt_check_vector)))
-    end = time.time()
-    print('Subgradient Time: ' + str(end - start))
+    # end = time.time()
+    # print('Subgradient Time: ' + str(end - start))
     # mcnf.m.setParam('OutputFlag', 1)
     # mcnf.m.optimize()
 
-
-# Prints for debugging
-    # print("===============================================")
-    # print('ALL Rooms')
-    # print("-----------------------------------------------")
-    # print(list(statics.roomKey))
-    # print("_______________________________________________")
-    # print('ACTIVE Commodities')
-    # print("-----------------------------------------------")
-    # for i in range(len(mcnf.commodityList)):
-    #     print(str(i+1) + '. ' + mcnf.commodityList[i])
-    # print("_______________________________________________")
-    # print("Steepest Ascents: (Ax-b)")
-    # print("-----------------------------------------------")
-    # for node in mcnf.lagrange_mults:
-    #     steepest_ascent = mcnf.cap_constrs[node].getValue()
-    #     name = "({}, {}, {})".format(node[0], node[1], node[2])
-    #     print(name + ': ' + str(steepest_ascent))
-    # print("===============================================")
-
-        # updated_lagrange_mults[node] = max(lagrange_mults[node] + stepsize * steepest_ascent, 0)
-        # vector.append((updated_lagrange_mults[node] - lagrange_mults[node])/counter) # TODO: not sure if this is the correct function
+# Sudo Code
     # while ((norm(vector) > 0) OR (counter < 1,000,000)):
     #   counter++
     #   m.optimize()
@@ -312,15 +291,15 @@ def greedy_swap(mcnf):
         else:
             print('Room '+ str(node[0]) + ' is at capacity in time echelon ' + str(node[1]) +'.')
 
-
-    #  pull all storage nodes in a single echelon
-    #  check Ax - b:
-    #      if Ax-b > 0, then over capacity
-    #      if Ax-b < 0, under capacity
-    #  minimize the added cost to the model
-    #      minimize the cost change on inflow + cost change for outflow.
-    #      if we shift both inflow and outflow of both rooms by Ax-b issues shouldnt propogate
-    #      Assignment optimization model?
+# Sudo Code
+#     pull all storage nodes in a single echelon
+#     check Ax - b:
+#         if Ax-b > 0, then over capacity
+#         if Ax-b < 0, under capacity
+#     minimize the added cost to the model
+#         minimize the cost change on inflow + cost change for outflow.
+#         shift both inflow and outflow of both rooms by Ax-b
+#             ?? Assignment optimization model ??
 
 
 def printSolution(mcnf):
