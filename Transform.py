@@ -177,14 +177,19 @@ def excelWriter(arcDict, filename, sheet_name):
     writer.save()
     return None
 
-def auxiliaryWriter(roomDict, filename):
-    roomList = []
+def auxiliaryWriter(roomDict, filename, sheet_name):
+    room_list = []
+    room_list.append(["Room ID", "Room Name"])
     for room in roomDict.keys():
-        roomList.append([room, roomDict[room]])
-    with open(filename, "w") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Room ID", "Room Name"])
-        writer.writerows(roomList)
+        room_list.append([room, roomDict[room]])
+    book = load_workbook("EquipmentInventory.xlsx")
+    df = pd.DataFrame(room_list)
+    writer = pd.ExcelWriter("EquipmentInventory.xlsx", engine='openpyxl')
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+    df.to_excel(writer, sheet_name=sheet_name, index=False, index_label=False, header=False)
+    writer.save()
+    return None
 
 def main(args):
     #(echelon_dict, eventRoomList, itemList, requirementDict) = setupDataReader("SetupData.csv")
@@ -209,7 +214,7 @@ def main(args):
     excelWriter(storage_cap_arc_dict, "EquipmentInventory.xlsx", "Storage Room Arcs")
     excelWriter(event_req_arc_dict, "EquipmentInventory.xlsx", "Event Room Arcs")
     excelWriter(utility_arc_dict, "EquipmentInventory.xlsx", "Utility Arcs")
-    auxiliaryWriter(room_dict, "RoomDictionary.csv")
+    auxiliaryWriter(room_dict, "EquipmentInventory.xlsx", "Room Dictionary")
     #print(eventRoomList)
     #print(itemList)
     print((len(movement_arc_dict) + len(storage_cap_arc_dict) + len(event_req_arc_dict)))
