@@ -10,16 +10,15 @@ class DataStorage:
     pass
 
 
-def arcReader(filename):
+def arcReader(filename, sheet_name):
     '''Reads arc csv file and returns list of non-empty rows.'''
 
     rows = []
-    with open (filename, "r") as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if any(row): # Handles Empty Lines from OS swap
-                rows.append(row)
-    return rows
+    excel_data = {}
+    xl = pd.ExcelFile(filename)
+    inventory_df = xl.parse(sheet_name)
+    inventory_rows = inventory_df.values.tolist()
+    return inventory_rows
 
 def csvReader(filename):
     '''Reads csv data into a dictionary. '''
@@ -90,7 +89,7 @@ def construct_network(arc_data, mcnf, statics):
                 if node not in nodeList:
                     nodeList.append(node)
                     if node[0] != 's' and node[0] != 't':
-                        room_name = statics.roomKey[node[0]]
+                        room_name = statics.roomKey[str(node[0])]
                         if room_name[0] == 'S' and node[2] == 'b':
                             lagrange_mults[node] = 0
 
@@ -171,7 +170,7 @@ def cap_constr_mapper(mcnf, statics):
     cap_constrs = {}
     for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodelist, storage and not, a vs b
         if node[0] != 's' and node[0] != 't': # TODO: Remove 's' node.
-            room_name = statics.roomKey[node[0]]
+            room_name = statics.roomKey[str(node[0])]
             if room_name[0] == "S" and node[2] == "b":
                 vol_node_i = LinExpr()
                 for commodity in mcnf.commodityList:
@@ -186,7 +185,7 @@ def cap_constr_mapper(mcnf, statics):
                     # iterate through
                             if arc[1] == node and arc[2] == commodity:
                                 vol_node_i.add(mcnf.varDict[arc_type][arc], commodity_vols[commodity])
-                vol_node_i.add(-room_caps[statics.roomKey[node[0]]])
+                vol_node_i.add(-room_caps[statics.roomKey[str(node[0])]])
                 cap_constrs[node] = vol_node_i
     mcnf.cap_constrs = cap_constrs
 
@@ -396,10 +395,10 @@ def main(args):
     #
     # To be updated as the state of the model changes.
     arc_data = {}
-    arc_data["utility"] = arcReader("UtilityArcs.csv")
-    arc_data["movement"] = arcReader("MovementArcs.csv")
-    arc_data["event_req"] = arcReader("EventRequirementArcs.csv")
-    arc_data["storage_cap"] = arcReader("StorageCapacityArcs.csv")
+    arc_data["utility"] = arcReader("EquipmentInventory.xlsx", "Utility Arcs")
+    arc_data["movement"] = arcReader("EquipmentInventory.xlsx", "Movement Arcs")
+    arc_data["event_req"] = arcReader("EquipmentInventory.xlsx", "Event Room Arcs")
+    arc_data["storage_cap"] = arcReader("EquipmentInventory.xlsx", "Storage Room Arcs")
 
     mcnf = DataStorage()
     mcnf.m = Model("m")
