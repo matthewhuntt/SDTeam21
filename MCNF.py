@@ -1,5 +1,4 @@
 from gurobipy import *
-import csv
 import math
 import time
 import pandas as pd
@@ -11,7 +10,7 @@ class DataStorage:
 
 
 def arcReader(filename, sheet_name):
-    '''Reads arc csv file and returns list of non-empty rows.'''
+    '''Reads arc sheets and returns list of non-empty rows.'''
 
     rows = []
     excel_data = {}
@@ -19,21 +18,6 @@ def arcReader(filename, sheet_name):
     inventory_df = xl.parse(sheet_name)
     inventory_rows = inventory_df.values.tolist()
     return inventory_rows
-
-def csvReader(filename):
-    '''Reads csv data into a dictionary. '''
-
-    csv_data = {}
-    with open (filename, "r") as f:
-        reader = csv.reader(f)
-        next(reader) # Handles Table Headers
-        for row in reader:
-            if any(row): # Handles Empty Lines from OS swap
-                if row[1].isnumeric():
-                    csv_data[row[0]] = float(row[1])
-                else:
-                    csv_data[row[0]] = row[1]
-    return csv_data
 
 def excelReader(filename, sheet_name):
     '''Reads supporting data from master excel file into a dictionary'''
@@ -340,13 +324,6 @@ def printSolution(mcnf):
     else:
         print('No solution;', m.status)
 
-# def outputCsv(mcnf):
-#     g_vars = mcnf.movement_arcs
-#     with open('movement_schedule.csv', mode='w') as schedule_file:
-#         employee_writer = csv.writer(schedule_file, delimiter=',') # other params? , quotechar='"', quoting=csv.QUOTE_MINIMAL)
-#         for var in g_vars:
-#             schedule_writer.writerow()
-
 def main(args):
     # statics is used to store inmutable data from the
     # system, including:
@@ -358,9 +335,6 @@ def main(args):
     #
     # Only used for reference.
     statics = DataStorage()
-    #statics.roomKey = csvReader("RoomDictionary.csv")
-    #statics.room_caps = csvReader("RoomCapacities.csv")
-    #statics.commodity_vols = csvReader("CommodityVolumes.csv")
     statics.roomKey = excelReader("EquipmentInventory.xlsx", "Room Dictionary")
     statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
     statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
