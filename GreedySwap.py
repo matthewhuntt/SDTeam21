@@ -57,9 +57,11 @@ def csvReader(filename):
 
 def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
     cost_dict = statics.cost_dict
+    print(cost_dict)
+    print()
     priority_list = statics.priority_list
     sorted_over_node_list = sorted(over_cap, key=lambda k: k[1])
-    print(sorted_over_node_list)
+    # print(sorted_over_node_list)
     for over_node in sorted_over_node_list:
         print("Now working on node " + str(over_node))
         incoming_dict = {}
@@ -73,10 +75,20 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
         for commodity in priority_list:
             print("Now moving " + commodity)
             insertion_cost_dict = {}
+            # print(incoming_dict.keys())
             if commodity in incoming_dict.keys():
-                for incoming_arc in commodity:
+                for incoming_arc in incoming_dict[commodity]:
                     for under_node in under_cap.keys():
-                        cost = cost_dict[(incoming_arc[0], under_node)] - cost_dict[(incoming_arc[0], over_node)]
+
+                        print()
+                        pair_to_add = str(incoming_arc[0]) + ", " + str(under_node)
+                        print("Pair to insert: " + pair_to_add)
+                        pair_to_rem = str(incoming_arc[0]) + ", " + str(over_node)
+                        print("Pair to remove: " + pair_to_rem)
+
+                        print("Room names in arcs do not match room names in cost_dict!\n")
+
+                        cost = cost_dict[(incoming_arc[0][0], under_node[0])] - cost_dict[(incoming_arc[0][0], over_node[0])]
                         insertion_cost_dict[(incoming_arc[0], under_node, commodity)] = cost
             #below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
             sorted_insertion_list = sorted(insertion_cost_dict, key=lambda k: insertion_cost_dict[k])
