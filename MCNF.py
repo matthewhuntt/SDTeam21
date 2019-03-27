@@ -40,6 +40,17 @@ def excelReader(filename, sheet_name):
                 excel_data[str(row[0])] = row[1]
     return excel_data
 
+def costDataReader(filename):
+    xl = pd.ExcelFile(filename)
+    df = xl.parse("Cost Data", header=None)
+    rows = df.values.tolist()
+    print(rows)
+    cost_dict = {}
+    for rowIndex in range (1, len(rows)):
+        for columnIndex in range (1, len(rows)):
+            cost_dict[(rows[rowIndex][0], rows[0][columnIndex])] = rows[rowIndex][columnIndex]
+    return cost_dict
+
 def construct_network(arc_data, mcnf, statics):
     '''
     Formats data into Network Components
@@ -280,7 +291,7 @@ def norm(vector):
         sum += x**2
     return math.sqrt(sum)
 
-def greedy_swap(mcnf):
+def greedy_swap(mcnf, statics):
     '''
     Enforces capacity constrants by swapping equipment
     allocations from storage rooms over capacity to rooms
@@ -295,6 +306,51 @@ def greedy_swap(mcnf):
             print('Room '+ str(node[0]) + ' is over capacity by ' + str(axb) + ' units in time echelon ' + str(node[1]) +'.')
         else:
             print('Room '+ str(node[0]) + ' is at capacity in time echelon ' + str(node[1]) +'.')
+
+    cost_dict = statics.cost_dict
+    priority_list = statics.priority_list
+    movement_arcs_dict ={}
+    for x in mcnf.varDict['movement']:
+        movement_arcs_dict[x] = mcnf.varDict['movement'][x].X
+
+    over_cap = {} # key = string name of room node | value = current deviation from capacity
+    under_cap = {} # key = string name of room node | value = current deviation from capacity
+    for node in mcnf.lagrange_mults:
+        axb = mcnf.cap_constrs[node].getValue()
+        if axb < 0:
+            under_cap[node] = axb
+        elif axb > 0:
+            over_cap[node] = axb
+
+    sorted_over_node_list = sorted(over_cap, key=lambda k: k[1])
+    for over_node in sorted_over_node_list:
+        incoming_dict = {}
+        for incoming_arc in movement_arcs_dict.keys():
+            if incoming_arc[1] == (over_node[0], over_node[1], 'a'):
+                if movement_arcs_dict[incoming_arc] > 0:
+                    if incoming_arc[2] in incoming_dict.keys():
+                         incoming_dict[incoming_arc[2]].append(incoming_arc)
+                    else:
+                         incoming_dict[incoming_arc[2]] = [incoming_arc]
+        for commodity in priority_list:
+            insertion_cost_dict = {}
+            if commodity in incoming_dict.keys():
+                for incoming_arc in commodity:
+                    for under_node in under_cap.keys():
+                        cost = cost_dict[(incoming_arc[0], under_node)] - cost_dict[(incoming_arc[0], over_node)]
+                        insertion_cost_dict[(incoming_arc[0], under_node, commodity)] = cost
+            #below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
+            sorted_insertion_list = sorted(insertion_cost_dict, key=lambda k: insertion_cost_dict[k])
+            while over_cap[over_node] > 0:
+                for red_arc in sorted_insertion_list:
+                    blue_arc = (red_arc[0], (over_node[0], over_node[1], 'a'), commodity)
+                    under_node = (red_arc[1][0], red_arc[1][1], 'b')
+                    swap_count = min(movement_arc_dict[blue_arc], over_cap[over_node], under_cap[under_node])
+                    movement_arc_dict[over_node] -= swap_count
+                    movement_arc_dict[under_node] += swap_count
+                    if movement_arc_dict[under_node] == 0:
+                        del movement_arc_dict[under_node]
+            del movement_arc_dict[over_node]
 
 # Sudo Code
 #     pull all storage nodes in a single echelon
@@ -338,6 +394,12 @@ def main(args):
     statics.roomKey = excelReader("EquipmentInventory.xlsx", "Room Dictionary")
     statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
     statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
+    statics.cost_dict = costDataReader("EquipmentInventory.xlsx")
+    statics.priority_list = ["8 X 30 TABLES", "6 X 30 TABLES", "8 X 18 TABLES", "6 X 18 TABLES", "66 RROUND TABLES", "HIGH BOYS", "30 COCKTAIL ROUNDS",
+        "MEETING ROOM CHAIRS", "PODIUMS", "STAGE SKIRT DOLLIES", "TABLE SKIRT DOLLIES", "MEETING ROOM CHAIR DOLLIES",
+        "66 ROUND TABLE DOLLIES", "FOLDING CHAIR DOLLIES (V STACK)", "FOLDING CHAIR DOLLIES (SQUARE STACK)", "HIGH BOY DOLLIES",
+        "LONG TABLE DOLLIES", "SHORT TABLE DOLLIES", "STAND UP TABLE DOLLIES", "16RISERS 6 X 8", "24RISERS 6 X 8", "32RISERS 6 X 8", "(3) STEP UNIT WITH RAIL",
+        "(3) STEP UNIT WITHOUT RAIL", "(2) STEP UNIT WITH RAIL", "(2) STEP UNIT WITHOUT RAIL","SETS OF STAGE STEPS", "16RISERS 6 X 8", "24RISERS 6 X 8", "30 STAND-UP ROUNDS"]
     print(statics.room_caps)
     print(statics.commodity_vols)
     print(statics.roomKey)
@@ -383,7 +445,7 @@ def main(args):
 
     # subgradient_ascent(mcnf, statics)
     subgradient_ascent(mcnf, statics, 100) # REDUCED ITERATION COUNT FOR TESTING
-    greedy_swap(mcnf)
+    greedy_swap(mcnf, statics)
     # printSolution(mcnf)
 
 
