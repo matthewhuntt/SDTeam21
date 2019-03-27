@@ -71,11 +71,12 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                         insertion_cost_dict[(incoming_arc[0], under_node, commodity)] = cost
             #below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
             sorted_insertion_list = sorted(insertion_cost_dict, key=lambda k: insertion_cost_dict[k])
-            print(sorted_insertion_list)
+            if len(sorted_insertion_list) > 0:
+                print(sorted_insertion_list)
             print ("Amount to move: " + str(over_cap[over_node]))
             for red_arc in sorted_insertion_list:
                 if over_cap[over_node] > 0:
-                    print("Now trying " + str(red_arc))
+                    #print("Now trying " + str(red_arc))
                     blue_arc = (red_arc[0], (over_node[0], over_node[1], 'a'), commodity)
                     under_node = (red_arc[1][0], red_arc[1][1], 'b')
                     swap_count = min(movement_arcs_dict[blue_arc], over_cap[over_node], under_cap[under_node])
