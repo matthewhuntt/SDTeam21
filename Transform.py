@@ -104,9 +104,6 @@ def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict
             "S41", "S42", "S43", "S44", "S45", "S46", "S47", "S48", "S49", "S50",
             "S51", "S52", "S53", "S54", "S55", "S56", "S57", "S58", "S59"]
     allRoomList = eventRoomList + storageRoomList
-    roomDict = {}
-    for i in range (len(allRoomList)):
-        roomDict[i + 1] = allRoomList[i]
     movement_arc_dict = {}
     storage_cap_arc_dict = {}
     event_req_arc_dict = {}
@@ -116,16 +113,16 @@ def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict
     #last
 
     for echelon in echelon_dict:
-        for roomI in roomDict:
-            for roomJ in roomDict:
+        for roomI in allRoomList:
+            for roomJ in allRoomList:
                 for ab in ["a", "b"]:
                     if ab == "a":
                         if roomI == roomJ:
-                            if (roomDict[roomI], echelon) in requirementDict:
-                                for requirement in requirementDict[(roomDict[roomI], echelon)]:
+                            if (roomI, echelon) in requirementDict:
+                                for requirement in requirementDict[(roomI, echelon)]:
                                     item, qty = requirement[0], requirement[1]
                                     event_req_arc_dict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (qty, qty, 0)
-                            if roomDict[roomI] in storageRoomList:
+                            if roomI in storageRoomList:
                                 for item in itemList:
                                     storage_cap_arc_dict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (0, 100000000, 0)
                     if ab == "b":
@@ -135,23 +132,23 @@ def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict
 
     #Create set of arcs for inital starting conditions from s node to each room
 
-    for room in roomDict:
+    for room in allRoomList:
         for item in itemList:
             utility_arc_dict[(("s", 0, "a"), (room, 0, "b"), item)] = (100000, 100000, 0)
             movement_arc_dict[((room, (len(echelon_dict.keys())), "b"), ("t", (len(echelon_dict.keys()) + 1), "a"), item)] = (0, 1000000000, 0)
 
     #Create set of movement arcs for the first movement period
 
-    for roomI in roomDict:
-        for roomJ in roomDict:
+    for roomI in allRoomList:
+        for roomJ in allRoomList:
             for item in itemList:
-                movement_arc_dict[((roomI, 0, "b"), (roomJ, 1, "a"), item)] = (0, 100000000, costDict[(roomDict[roomI], roomDict[roomJ])])
+                movement_arc_dict[((roomI, 0, "b"), (roomJ, 1, "a"), item)] = (0, 100000000, costDict[(roomI, roomJ)])
 
-    rooms = len(roomDict.keys())
+    rooms = len(allRoomList)
     for item in itemList:
         utility_arc_dict[(("t", (len(echelon_dict.keys()) + 1), "a"), ("t", (len(echelon_dict.keys()) + 1), "b"), item)] = (100000 * rooms, 100000 * rooms, 0)
 
-    return movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, roomDict
+    return movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, allRoomList
 
 def arcDictWriter(arcDict, filename):
     #Writes to csv file
@@ -181,22 +178,22 @@ def excelWriter(arcDict, filename, sheet_name):
     writer.save()
     return None
 
-def auxiliaryWriter(roomDict, filename, sheet_name):
-    room_list = []
-    room_list.append(["Room ID", "Room Name"])
-    for room in roomDict.keys():
-        room_list.append([room, roomDict[room]])
-    book = load_workbook("EquipmentInventory.xlsx")
-    df = pd.DataFrame(room_list)
-    writer = pd.ExcelWriter("EquipmentInventory.xlsx", engine='openpyxl')
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-    df.to_excel(writer, sheet_name=sheet_name, index=False, index_label=False, header=False)
-    writer.save()
-    return None
+# def auxiliaryWriter(filename, sheet_name):
+#     room_list = []
+#     room_list.append(["Room ID", "Room Name"])
+#     for room in roomDict.keys():
+#         room_list.append([room, roomDict[room]])
+#     book = load_workbook("EquipmentInventory.xlsx")
+#     df = pd.DataFrame(room_list)
+#     writer = pd.ExcelWriter("EquipmentInventory.xlsx", engine='openpyxl')
+#     writer.book = book
+#     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+#     df.to_excel(writer, sheet_name=sheet_name, index=False, index_label=False, header=False)
+#     writer.save()
+#     return None
 
 def main(args):
-    #(echelon_dict, eventRoomList, itemList, requirementDict) = setupDataReader("SetupData.csv")
+
     cost_dict = costDataReader("EquipmentInventory.xlsx")
     #print(cost_dict)
     (inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict) = currentStateReader("EquipmentInventory.xlsx")
@@ -210,7 +207,7 @@ def main(args):
     # print("\n\n")
     # print(item_list)
 
-    movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, room_dict = constructor(echelon_dict, event_room_list, item_list, cost_dict, requirement_dict, inventory_dict)
+    movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, allRoomList = constructor(echelon_dict, event_room_list, item_list, cost_dict, requirement_dict, inventory_dict)
     arcDictWriter(movement_arc_dict, "MovementArcs.csv")
     arcDictWriter(storage_cap_arc_dict, "StorageCapacityArcs.csv")
     arcDictWriter(event_req_arc_dict, "EventRequirementArcs.csv")
@@ -219,12 +216,11 @@ def main(args):
     excelWriter(storage_cap_arc_dict, "EquipmentInventory.xlsx", "Storage Room Arcs")
     excelWriter(event_req_arc_dict, "EquipmentInventory.xlsx", "Event Room Arcs")
     excelWriter(utility_arc_dict, "EquipmentInventory.xlsx", "Utility Arcs")
-    auxiliaryWriter(room_dict, "EquipmentInventory.xlsx", "Room Dictionary")
+    #auxiliaryWriter(room_dict, "EquipmentInventory.xlsx", "Room Dictionary")
     #print(eventRoomList)
     #print(itemList)
     print((len(movement_arc_dict) + len(storage_cap_arc_dict) + len(event_req_arc_dict)))
-    print(len(room_dict.keys()))
-    print(room_dict)
+    print(len(allRoomList))
     print(len(event_room_list))
     print(len(echelon_dict.keys()))
 
