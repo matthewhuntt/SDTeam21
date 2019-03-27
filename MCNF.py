@@ -316,14 +316,14 @@ def greedy_swap(mcnf, statics):
     for x in mcnf.varDict['movement']:
         movement_arcs_dict[x] = mcnf.varDict['movement'][x].X
         row = [str(x), mcnf.varDict['movement'][x].X]
-        rowsa.append(row)
+        rows.append(row)
 
     for node in mcnf.lagrange_mults:
         axb = mcnf.cap_constrs[node].getValue()
         if axb < 0:
-            rows_under_cap.append(str(node), axb)
+            rows_under_cap.append([str(node), axb])
         elif axb > 0:
-            rows_over_cap.append(str(node), axb)
+            rows_over_cap.append([str(node), axb])
 
     with open("ModelOutput.csv", 'w') as f:
         writer = csv.writer(f, delimiter='|')
@@ -331,11 +331,11 @@ def greedy_swap(mcnf, statics):
 
     with open("UnderCap.csv", 'w') as f:
         writer = csv.writer(f, delimiter='|')
-        writer.writerows(rows)
+        writer.writerows(rows_over_cap)
 
     with open("OverCap.csv", 'w') as f:
         writer = csv.writer(f, delimiter='|')
-        writer.writerows(rows)
+        writer.writerows(rows_under_cap)
 
     return None
 
