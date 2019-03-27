@@ -154,7 +154,7 @@ def flow_constraints(mcnf):
 
 def cap_constr_mapper(mcnf, statics):
     '''
-    Maps the storage room nodes to thier respective
+    Maps the storage room nodes to their respective
     relaxed capacity constraints.
     Capacity Term mapping: node -> LinExpr(Ax-b)
     Keys: Only Storage Room 'b' nodes
@@ -163,7 +163,7 @@ def cap_constr_mapper(mcnf, statics):
     commodity_vols = statics.commodity_vols
     room_caps = statics.room_caps
     cap_constrs = {}
-    for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodelist, storage and not, a vs b
+    for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodeList, storage and not, a vs b
         if node[0] != 's' and node[0] != 't': # TODO: Remove 's' node.
             room_name = statics.roomKey[str(node[0])]
             if room_name[0] == "S" and node[2] == "b":
@@ -204,7 +204,7 @@ def penalty_term(mcnf):
     '''
     Creates the Lagrangian Penalty Term.
     uses the capacity term (Ax-b)
-    and the lagrangian multiplier (muT)
+    and the Lagrangian multiplier (muT)
 
     penalty_term  = muT*(Ax-b)
     '''
@@ -234,7 +234,7 @@ def update_objective(mcnf):
 def subgradient_ascent(mcnf, statics, iterations=10000):
     '''
     Solves optimization model using a subgradient ascent
-    algorithm, by itteratively solving and updating a
+    algorithm, by iteratively solving and updating a
     relaxed formulation of the model.
     '''
 # TODO: Clean and Document
@@ -285,7 +285,7 @@ def subgradient_ascent(mcnf, statics, iterations=10000):
     #   Update objective function
 
 def norm(vector):
-    '''Returns the Norm of the vector arguement.'''
+    '''Returns the Norm of the vector argument.'''
     sum = 0
     for x in vector:
         sum += x**2
@@ -293,7 +293,7 @@ def norm(vector):
 
 def greedy_swap(mcnf, statics):
     '''
-    Enforces capacity constrants by swapping equipment
+    Enforces capacity constraints by swapping equipment
     allocations from storage rooms over capacity to rooms
     under capacity.
     '''
@@ -397,12 +397,12 @@ def printSolution(mcnf):
         print('No solution;', m.status)
 
 def main(args):
-    # statics is used to store inmutable data from the
+    # statics is used to store immutable data from the
     # system, including:
     #   - Room ID Mapping | roomKey
-    #   - Stroage Room Capacity Dictionary | roomCapDict
+    #   - Storage Room Capacity Dictionary | roomCapDict
     #   - Commodity Volume Dictionary | commodityVolDict
-    #   - Equipment Initial Loaction
+    #   - Equipment Initial Location
     #   - Dijkstra's Matrix
     #
     # Only used for reference.
@@ -416,9 +416,9 @@ def main(args):
         "66 ROUND TABLE DOLLIES", "FOLDING CHAIR DOLLIES (V STACK)", "FOLDING CHAIR DOLLIES (SQUARE STACK)", "HIGH BOY DOLLIES",
         "LONG TABLE DOLLIES", "SHORT TABLE DOLLIES", "STAND UP TABLE DOLLIES", "16RISERS 6 X 8", "24RISERS 6 X 8", "32RISERS 6 X 8", "(3) STEP UNIT WITH RAIL",
         "(3) STEP UNIT WITHOUT RAIL", "(2) STEP UNIT WITH RAIL", "(2) STEP UNIT WITHOUT RAIL","SETS OF STAGE STEPS", "16RISERS 6 X 8", "24RISERS 6 X 8", "30 STAND-UP ROUNDS"]
-    print(statics.room_caps)
-    print(statics.commodity_vols)
-    print(statics.roomKey)
+    # print(statics.room_caps)
+    # print(statics.commodity_vols)
+    # print(statics.roomKey)
     # for x in statics.commodity_vols:
     #     print(x +': '+ str(statics.commodity_vols[x]))
 
@@ -436,14 +436,14 @@ def main(args):
     # print()
 
     # mcnf is used to store mutable data about the current
-    # state fo the optimization model, including:
+    # state for the optimization model, including:
     #   - Gurobi Model | m
     #   - Unrelaxed MCNF Objective | unrelaxed_objective
     #   - Mapping of arcs to variables | varDict
     #   - Mapping of storage nodes to Lagrange multipliers | lagrange_mults
     #   - List of all nodes present in MCNF | nodeList
     #   - List of all commodities present in MCNF | commodityList
-    #   - Mapping of storage nodes to thier Capacity Constraints | cap_constrs
+    #   - Mapping of storage nodes to their Capacity Constraints | cap_constrs
     #
     # To be updated as the state of the model changes.
     arc_data = {}
