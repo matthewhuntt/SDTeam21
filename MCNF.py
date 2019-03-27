@@ -84,8 +84,7 @@ def construct_network(arc_data, mcnf, statics):
                 if node not in nodeList:
                     nodeList.append(node)
                     if node[0] != 's' and node[0] != 't':
-                        room_name = str(node[0])
-                        if room_name[0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
+                        if node[0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
                             lagrange_mults[node] = 0
 
             # Update commodityList
@@ -165,8 +164,7 @@ def cap_constr_mapper(mcnf, statics):
     cap_constrs = {}
     for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodeList, storage and not, a vs b
         if node[0] != 's' and node[0] != 't': # TODO: Remove 's' node.
-            room_name = str(node[0])
-            if room_name[0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
+            if node[0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
                 vol_node_i = LinExpr()
                 for commodity in mcnf.commodityList:
                     for arc_type in mcnf.varDict:
