@@ -41,9 +41,18 @@ def csvReader(filename):
     dictionary = {}
     with open(filename) as f:
         reader = csv.reader(f, delimiter='|')
-        for row in reader:
-            if any(row):
-                dictionary[row[0]] = row[1]
+        if filename = "ModelOutput.csv"
+            for row in reader:
+                if any(row):
+                    dictionary[((row[0], row[1], row[2]), (row[3], row[4], row[5]), row[6])] = row[7]
+        if filename = "UnderCap.csv"
+            for row in reader:
+                if any(row):
+                    dictionary[(row[0], row[1], row[2])] = row[3]
+        if filename = "OverCap.csv"
+            for row in reader:
+                if any(row):
+                    dictionary[(row[0], row[1], row[2])] = row[3]
     return dictionary
 
 def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
