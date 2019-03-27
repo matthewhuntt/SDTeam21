@@ -79,7 +79,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                     #print("Now trying " + str(red_arc))
                     blue_arc = (red_arc[0], (over_node[0], over_node[1], 'a'), commodity)
                     under_node = (red_arc[1][0], red_arc[1][1], 'b')
-                    swap_count = min(movement_arcs_dict[blue_arc], over_cap[over_node], under_cap[under_node])
+                    swap_count = min(movement_arcs_dict[blue_arc], over_cap[over_node], abs(under_cap[under_node]))
                     movement_arcs_dict[over_node] -= swap_count
                     movement_arcs_dict[under_node] += swap_count
                     if movement_arcs_dict[under_node] == 0:
