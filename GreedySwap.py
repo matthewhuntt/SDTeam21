@@ -42,7 +42,8 @@ def csvReader(filename):
     with open(filename) as f:
         reader = csv.reader(f, delimiter='|')
         for row in reader:
-            dictionary[row[0]] = row[1]
+            if any(row):
+                dictionary[row[0]] = row[1]
     return dictionary
 
 def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
@@ -100,7 +101,7 @@ def main(args):
     movement_arcs_dict = csvReader('ModelOutput.csv')
     under_cap = csvReader('UnderCap.csv')
     over_cap = csvReader('OverCap.csv')
-    greedy_swap(statics, movement_arcs_dict, axb_dict)
+    greedy_swap(statics, movement_arcs_dict, under_cap, over_cap)
 
 if __name__ == '__main__':
     import sys
