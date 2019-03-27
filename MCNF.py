@@ -44,7 +44,6 @@ def costDataReader(filename):
     xl = pd.ExcelFile(filename)
     df = xl.parse("Cost Data", header=None)
     rows = df.values.tolist()
-    print(rows)
     cost_dict = {}
     for rowIndex in range (1, len(rows)):
         for columnIndex in range (1, len(rows)):
@@ -323,7 +322,9 @@ def greedy_swap(mcnf, statics):
             over_cap[node] = axb
 
     sorted_over_node_list = sorted(over_cap, key=lambda k: k[1])
+    print(sorted_over_node_list)
     for over_node in sorted_over_node_list:
+        print("Now working on node " + str(over_node))
         incoming_dict = {}
         for incoming_arc in movement_arcs_dict.keys():
             if incoming_arc[1] == (over_node[0], over_node[1], 'a'):
@@ -333,6 +334,7 @@ def greedy_swap(mcnf, statics):
                     else:
                          incoming_dict[incoming_arc[2]] = [incoming_arc]
         for commodity in priority_list:
+            print("Now moving " + commodity)
             insertion_cost_dict = {}
             if commodity in incoming_dict.keys():
                 for incoming_arc in commodity:
@@ -341,16 +343,20 @@ def greedy_swap(mcnf, statics):
                         insertion_cost_dict[(incoming_arc[0], under_node, commodity)] = cost
             #below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
             sorted_insertion_list = sorted(insertion_cost_dict, key=lambda k: insertion_cost_dict[k])
-            while over_cap[over_node] > 0:
-                for red_arc in sorted_insertion_list:
+            print(sorted_insertion_list)
+            print ("Amount to move: " + str(over_cap[over_node]))
+            for red_arc in sorted_insertion_list:
+                if over_cap[over_node] > 0:
+                    print("Now trying " + str(red_arc))
                     blue_arc = (red_arc[0], (over_node[0], over_node[1], 'a'), commodity)
                     under_node = (red_arc[1][0], red_arc[1][1], 'b')
-                    swap_count = min(movement_arc_dict[blue_arc], over_cap[over_node], under_cap[under_node])
-                    movement_arc_dict[over_node] -= swap_count
-                    movement_arc_dict[under_node] += swap_count
-                    if movement_arc_dict[under_node] == 0:
-                        del movement_arc_dict[under_node]
-            del movement_arc_dict[over_node]
+                    swap_count = min(movement_arcs_dict[blue_arc], over_cap[over_node], under_cap[under_node])
+                    movement_arcs_dict[over_node] -= swap_count
+                    movement_arcs_dict[under_node] += swap_count
+                    if movement_arcs_dict[under_node] == 0:
+                        del under_cap[under_node]
+            if over_cap[over_node] == 0:
+                del over_cap[over_node]
 
 # Sudo Code
 #     pull all storage nodes in a single echelon
