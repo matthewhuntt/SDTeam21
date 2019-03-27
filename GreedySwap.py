@@ -65,7 +65,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
         incoming_dict = {}
         for incoming_arc in movement_arcs_dict.keys():
             if incoming_arc[1] == (over_node[0], over_node[1], 'a'):
-                if movement_arcs_dict[incoming_arc] > 0:
+                if int(movement_arcs_dict[incoming_arc]) > 0:
                     if incoming_arc[2] in incoming_dict.keys():
                          incoming_dict[incoming_arc[2]].append(incoming_arc)
                     else:
