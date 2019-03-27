@@ -84,7 +84,7 @@ def construct_network(arc_data, mcnf, statics):
                 if node not in nodeList:
                     nodeList.append(node)
                     if node[0] != 's' and node[0] != 't':
-                        room_name = statics.roomKey[str(node[0])]
+                        room_name = str(node[0])
                         if room_name[0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
                             lagrange_mults[node] = 0
 
@@ -165,7 +165,7 @@ def cap_constr_mapper(mcnf, statics):
     cap_constrs = {}
     for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodeList, storage and not, a vs b
         if node[0] != 's' and node[0] != 't': # TODO: Remove 's' node.
-            room_name = statics.roomKey[str(node[0])]
+            room_name = str(node[0])
             if room_name[0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
                 vol_node_i = LinExpr()
                 for commodity in mcnf.commodityList:
@@ -180,7 +180,7 @@ def cap_constr_mapper(mcnf, statics):
                     # iterate through
                             if arc[1] == node and arc[2] == commodity:
                                 vol_node_i.add(mcnf.varDict[arc_type][arc], commodity_vols[commodity])
-                vol_node_i.add(-room_caps[statics.roomKey[str(node[0])]])
+                vol_node_i.add(-room_caps[str(node[0])])
                 cap_constrs[node] = vol_node_i
     mcnf.cap_constrs = cap_constrs
 
@@ -416,7 +416,6 @@ def printSolution(mcnf):
 def main(args):
     # statics is used to store immutable data from the
     # system, including:
-    #   - Room ID Mapping | roomKey
     #   - Storage Room Capacity Dictionary | roomCapDict
     #   - Commodity Volume Dictionary | commodityVolDict
     #   - Equipment Initial Location
@@ -424,7 +423,6 @@ def main(args):
     #
     # Only used for reference.
     statics = DataStorage()
-    statics.roomKey = excelReader("EquipmentInventory.xlsx", "Room Dictionary")
     statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
     statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
     statics.cost_dict = costDataReader("EquipmentInventory.xlsx")
@@ -435,15 +433,11 @@ def main(args):
         "(3) STEP UNIT WITHOUT RAIL", "(2) STEP UNIT WITH RAIL", "(2) STEP UNIT WITHOUT RAIL","SETS OF STAGE STEPS", "16RISERS 6 X 8", "24RISERS 6 X 8", "30 STAND-UP ROUNDS"]
     # print(statics.room_caps)
     # print(statics.commodity_vols)
-    # print(statics.roomKey)
     # for x in statics.commodity_vols:
     #     print(x +': '+ str(statics.commodity_vols[x]))
 
 
 # Prints for Debugging
-    # print("\nRoom Key")
-    # for x in statics.roomKey:
-    #     print(str(x) + ": " + str(statics.roomKey[x]))
     # print("\nRoom Caps")
     # for x in statics.room_caps:
     #     print(str(x) + ": " + str(statics.room_caps[x]))
