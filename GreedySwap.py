@@ -45,18 +45,9 @@ def csvReader(filename):
             dictionary[row[0]] = row[1]
     return dictionary
 
-def greedy_swap(statics, movement_arcs_dict):
+def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
     cost_dict = statics.cost_dict
     priority_list = statics.priority_list
-    over_cap = {} # key = string name of room node | value = current deviation from capacity
-    under_cap = {} # key = string name of room node | value = current deviation from capacity
-    for node in mcnf.lagrange_mults:
-        axb = mcnf.cap_constrs[node].getValue()
-        if axb < 0:
-            under_cap[node] = axb
-        elif axb > 0:
-            over_cap[node] = axb
-
     sorted_over_node_list = sorted(over_cap, key=lambda k: k[1])
     print(sorted_over_node_list)
     for over_node in sorted_over_node_list:
@@ -107,7 +98,9 @@ def main(args):
         "(3) STEP UNIT WITHOUT RAIL", "(2) STEP UNIT WITH RAIL", "(2) STEP UNIT WITHOUT RAIL","SETS OF STAGE STEPS", "16RISERS 6 X 8", "24RISERS 6 X 8", "30 STAND-UP ROUNDS"]
 
     movement_arcs_dict = csvReader('ModelOutput.csv')
-    greedy_swap(statics, movement_arcs_dict)
+    under_cap = csvReader('UnderCap.csv')
+    over_cap = csvReader('OverCap.csv')
+    greedy_swap(statics, movement_arcs_dict, axb_dict)
 
 if __name__ == '__main__':
     import sys
