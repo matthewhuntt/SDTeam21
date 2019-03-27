@@ -27,6 +27,16 @@ def excelReader(filename, sheet_name):
                 excel_data[str(row[0])] = row[1]
     return excel_data
 
+def costDataReader(filename):
+    xl = pd.ExcelFile(filename)
+    df = xl.parse("Cost Data", header=None)
+    rows = df.values.tolist()
+    cost_dict = {}
+    for rowIndex in range (1, len(rows)):
+        for columnIndex in range (1, len(rows)):
+            cost_dict[(rows[rowIndex][0], rows[0][columnIndex])] = rows[rowIndex][columnIndex]
+    return cost_dict
+
 def csvReader(filename):
     dictionary = {}
     with open(filename) as f:
@@ -89,6 +99,12 @@ def main(args):
     statics.roomKey = excelReader("EquipmentInventory.xlsx", "Room Dictionary")
     statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
     statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
+    statics.cost_dict = costDataReader("EquipmentInventory.xlsx")
+    statics.priority_list = ["8 X 30 TABLES", "6 X 30 TABLES", "8 X 18 TABLES", "6 X 18 TABLES", "66 RROUND TABLES", "HIGH BOYS", "30 COCKTAIL ROUNDS",
+        "MEETING ROOM CHAIRS", "PODIUMS", "STAGE SKIRT DOLLIES", "TABLE SKIRT DOLLIES", "MEETING ROOM CHAIR DOLLIES",
+        "66 ROUND TABLE DOLLIES", "FOLDING CHAIR DOLLIES (V STACK)", "FOLDING CHAIR DOLLIES (SQUARE STACK)", "HIGH BOY DOLLIES",
+        "LONG TABLE DOLLIES", "SHORT TABLE DOLLIES", "STAND UP TABLE DOLLIES", "16RISERS 6 X 8", "24RISERS 6 X 8", "32RISERS 6 X 8", "(3) STEP UNIT WITH RAIL",
+        "(3) STEP UNIT WITHOUT RAIL", "(2) STEP UNIT WITH RAIL", "(2) STEP UNIT WITHOUT RAIL","SETS OF STAGE STEPS", "16RISERS 6 X 8", "24RISERS 6 X 8", "30 STAND-UP ROUNDS"]
 
     movement_arcs_dict = csvReader('ModelOutput.csv')
     greedy_swap(statics, movement_arcs_dict)
