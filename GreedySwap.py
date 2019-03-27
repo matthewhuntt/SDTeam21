@@ -110,7 +110,6 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
 
 def main(args):
     statics = DataStorage()
-    statics.roomKey = excelReader("EquipmentInventory.xlsx", "Room Dictionary")
     statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
     statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
     statics.cost_dict = costDataReader("EquipmentInventory.xlsx")
