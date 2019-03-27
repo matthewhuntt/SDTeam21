@@ -30,7 +30,7 @@ def excelReader(filename, sheet_name):
 def csvReader(filename):
     dictionary = {}
     with open(filename) as f:
-        reader = csv.DictReader(f)
+        reader = csv.reader(f, delimiter='|')
         for row in reader:
             dictionary[row[0]] = row[1]
     return dictionary
@@ -90,7 +90,7 @@ def main(args):
     statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
     statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
 
-    movement_arcs_dict = csvReader('modelOutput.csv')
+    movement_arcs_dict = csvReader('ModelOutput.csv')
     greedy_swap(statics, movement_arcs_dict)
 
 if __name__ == '__main__':
