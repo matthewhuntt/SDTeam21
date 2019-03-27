@@ -41,15 +41,15 @@ def csvReader(filename):
     dictionary = {}
     with open(filename) as f:
         reader = csv.reader(f, delimiter='|')
-        if filename == "ModelOutput.csv"
+        if filename == "ModelOutput.csv":
             for row in reader:
                 if any(row):
                     dictionary[((row[0], row[1], row[2]), (row[3], row[4], row[5]), row[6])] = row[7]
-        if filename == "UnderCap.csv"
+        if filename == "UnderCap.csv":
             for row in reader:
                 if any(row):
                     dictionary[(row[0], row[1], row[2])] = row[3]
-        if filename == "OverCap.csv"
+        if filename == "OverCap.csv":
             for row in reader:
                 if any(row):
                     dictionary[(row[0], row[1], row[2])] = row[3]
