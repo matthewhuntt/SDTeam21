@@ -331,11 +331,11 @@ def greedy_swap(mcnf, statics):
 
     with open("UnderCap.csv", 'w') as f:
         writer = csv.writer(f, delimiter='|')
-        writer.writerows(rows_over_cap)
+        writer.writerows(rows_under_cap)
 
     with open("OverCap.csv", 'w') as f:
         writer = csv.writer(f, delimiter='|')
-        writer.writerows(rows_under_cap)
+        writer.writerows(rows_over_cap)
 
     return None
 
