@@ -84,7 +84,7 @@ def construct_network(arc_data, mcnf, statics):
                 if node not in nodeList:
                     nodeList.append(node)
                     if node[0] != 's' and node[0] != 't':
-                        if node[0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
+                        if node[0][0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
                             lagrange_mults[node] = 0
 
             # Update commodityList
@@ -107,14 +107,17 @@ def construct_network(arc_data, mcnf, statics):
     mcnf.commodityList = commodityList
 
 # Prints for debugging
-    # for x in varDict:
-    #     print(x.upper())
-    #     for y in varDict[x]:
-    #         print(varDict[x][y].VarName)
+#     for x in varDict:
+#         print(x.upper())
+#         for y in varDict[x]:
+#             print(varDict[x][y].VarName)
     # for x in nodeList:
     #     print(str(x))
     # for x in commodityList:
     #     print(str(x))
+    # for x in lagrange_mults:
+    #     print(str(x))
+
 
 def makeVar(m, arc, lb, ub, cost):
     '''Creates Gurobi Variable and adds it to the model.'''
@@ -164,7 +167,7 @@ def cap_constr_mapper(mcnf, statics):
     cap_constrs = {}
     for node in mcnf.nodeList: # TODO - EFFICIENCY: partition nodeList, storage and not, a vs b
         if node[0] != 's' and node[0] != 't': # TODO: Remove 's' node.
-            if node[0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
+            if node[0][0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
                 vol_node_i = LinExpr()
                 for commodity in mcnf.commodityList:
                     for arc_type in mcnf.varDict:
