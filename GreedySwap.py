@@ -103,7 +103,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                     origin_node = red_arc[0]
                     under_node = red_arc[1]
                     blue_arc = (origin_node, over_node, commodity)
-                    if float(over_cap[over_node]) > 0 and float(movement_arcs_dict[blue_arc]) > 0:
+                    if (over_node in over_cap) and float(movement_arcs_dict[blue_arc]) > 0:
                         if under_node in under_cap:
                             f.write("----------------------------------\n")
                             f.write("Rerouting " +str(commodity) + " from " + str(origin_node) + "\n")
@@ -130,22 +130,28 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                                     print(str(under_node) + " is now full")
                                     f.write(str(under_node) + " is now full" + "\n")
                                     del under_cap[under_node]
+
                                 print("Amount remaining: " + str(over_cap[over_node]))
                                 f.write("Amount remaining: " + str(over_cap[over_node]) + "\n")
 
                             f.write("----------------------------------\n")
+                        if over_cap[over_node] == 0:
+                            del over_cap[over_node]
                     else:
-                        f.write("    Volume to move from over_node: " + str(over_cap[over_node]) + "\n")
                         f.write("    Num of commodity from origin_node: " + str(movement_arcs_dict[blue_arc]) + "\n")
 
+                        if over_node in over_cap:
+                            f.write("    Volume to move from over_node: " + str(over_cap[over_node]) + "\n")
+                        else:
+                            f.write(str(over_node) + " not in over_cap" + "\n")
+                        \
                         if under_node in under_cap:
                             f.write("    Space available in under_node: " + str(under_cap[under_node]) + "\n")
                         else:
                             f.write(str(under_node) + " not in under_cap" + "\n")
 
 
-                if over_cap[over_node] == 0:
-                    del over_cap[over_node]
+
 
 
         f.write("\nOUTPUT:\n")
