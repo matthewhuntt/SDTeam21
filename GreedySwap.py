@@ -59,44 +59,38 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
     print("greedy_swap")
     with open("log_file.txt","w") as f:
         cost_dict = statics.cost_dict
-        # print(cost_dict)
-        # print()
         priority_list = statics.priority_list
         sorted_over_node_list = sorted(over_cap, key=lambda k: k[1])
         for over_node in sorted_over_node_list:
-            print("Now working on node " + str(over_node))
-            incoming_dict = {}
-            for incoming_arc in movement_arcs_dict.keys():
-                if incoming_arc[1] == over_node:
-                    if float(movement_arcs_dict[incoming_arc]) > 0:
-                        if incoming_arc[2] in incoming_dict.keys():
-                             incoming_dict[incoming_arc[2]].append(incoming_arc)
+            blue_arc_dict = {}
+            for arc in movement_arcs_dict:
+                if arc[1] == over_node:
+                    if float(movement_arcs_dict[arc]) > 0:
+                        commodity = arc[2]
+                        if commodity in blue_arc_dict:
+                            blue_arc_dict[commodity].append(arc)
                         else:
-                             incoming_dict[incoming_arc[2]] = [incoming_arc]
+                            blue_arc_dict[commodity] = [arc]
+
             for commodity in priority_list:
-                print("Now moving " + commodity)
-                insertion_cost_dict = {}
-                if commodity in incoming_dict:
-                    for incoming_arc in incoming_dict[commodity]:
+                red_arc_dict = {}
+                if commodity in blue_arc_dict:
+                    for blue_arc in blue_arc_dict[commodity]:
                         for under_node in under_cap:
+                            origin_node = blue_arc[0]
+
                             # cost to add red_arc to current under_node and remove blue arc to over_node
-                            origin_node = incoming_arc[0]
                             cost = cost_dict[(origin_node[0], under_node[0])] - cost_dict[(origin_node[0], over_node[0])]
-                            insertion_cost_dict[(origin_node, under_node, commodity)] = cost
+                            red_arc_dict[(origin_node, under_node, commodity)] = cost
 
-                #below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
-                sorted_insertion_list = sorted(insertion_cost_dict, key=lambda k: insertion_cost_dict[k])
-                #if len(sorted_insertion_list) > 0:
-                #    print(sorted_insertion_list)
+                # below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
+                sorted_red_arc_list = sorted(red_arc_dict, key=lambda k: red_arc_dict[k])
 
-                for red_arc in sorted_insertion_list:
+                for red_arc in sorted_red_arc_list:
                     origin_node = red_arc[0]
                     blue_arc = (origin_node, over_node, commodity)
                     if float(over_cap[over_node]) > 0 and float(movement_arcs_dict[blue_arc]) > 0:
-                        print ("Amount to move: " + str(over_cap[over_node]))
-                        print("Now trying " + str(red_arc))
                         under_node = red_arc[1]
-                        #print(under_cap)
                         if under_node in under_cap:
                             a = abs(float(over_cap[over_node])) # Volume over capacity still to move from over_node
                             b = abs(float(under_cap[under_node])) # Spare capacity in under_node
@@ -109,8 +103,6 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                                 under_cap[under_node] += swap_count
                                 if under_cap[under_node] == 0:
                                     del under_cap[under_node]
-                                # if movement_arcs_dict[(origin_node, (under_node[0], under_node[1], 'a'), commodity)] == 0:
-                                #     del under_cap[under_node]
                 if over_cap[over_node] == 0:
                     del over_cap[over_node]
 
