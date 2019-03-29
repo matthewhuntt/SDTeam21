@@ -93,8 +93,8 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
 
                 # below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
                 sorted_red_arc_list = sorted(red_arc_dict, key=lambda k: red_arc_dict[k])
+                f.write("Sorted Arc List:\n")
                 for red_arc in sorted_red_arc_list:
-                    f.write("Sorted Arc List:")
                     f.write(str(red_arc))
                     origin_node = red_arc[0]
                     blue_arc = (origin_node, over_node, commodity)
