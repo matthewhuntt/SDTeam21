@@ -55,8 +55,9 @@ def csvReader(filename):
                     dictionary[(row[0], row[1], "a")] = float(row[3])
     return dictionary
 
-def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
+def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
     print("greedy_swap")
+    original_cost = model_cost
     with open("log_file.txt","w") as f:
         cost_dict = statics.cost_dict
         priority_list = statics.priority_list
@@ -116,6 +117,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                             f.write("    Num of commodity from origin_node | "+ str(c) + "\n")
                             swap_count = min(a, b, c)
                             if swap_count > 0:
+                                model_cost += red_arc_dict[red_arc]
                                 print("Moved " + str(swap_count) + " from " + str(over_node[0]) + " to " + str(under_node[0]) + " in t = " + str(over_node[1]))
                                 f.write("Moved " + str(swap_count) + " from " + str(over_node[0]) + " to " + str(under_node[0]) + " in t = " + str(over_node[1]) + "\n")
                                 movement_arcs_dict[(origin_node, over_node, commodity)] -= swap_count
@@ -144,7 +146,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                             f.write("    Volume to move from over_node: " + str(over_cap[over_node]) + "\n")
                         else:
                             f.write(str(over_node) + " not in over_cap" + "\n")
-                        \
+
                         if under_node in under_cap:
                             f.write("    Space available in under_node: " + str(under_cap[under_node]) + "\n")
                         else:
@@ -155,6 +157,9 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
 
 
         f.write("\nOUTPUT:\n")
+        f.write("MCNF Cost: "+ str(original_cost)+ "\n")
+        f.write("Updated Cost: "+ str(model_cost)+ "\n")
+        f.write("Diff in Cost: "+ str(model_cost - original_cost)+ "\n")
         f.write("Remaining over nodes:\n")
         for over_node in  over_cap:
             f.write(": ".join([str(over_node), str(over_cap[over_node])])+ "\n")
@@ -186,7 +191,9 @@ def main(args):
     movement_arcs_dict = csvReader('ModelOutput.csv')
     under_cap = csvReader('UnderCap.csv')
     over_cap = csvReader('OverCap.csv')
-    greedy_swap(statics, movement_arcs_dict, under_cap, over_cap)
+    with open("output_cost.txt") as f:
+        model_cost = float(f.readline())
+    greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost)
     print("\a")
 
 if __name__ == '__main__':

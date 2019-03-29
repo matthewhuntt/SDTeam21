@@ -427,7 +427,7 @@ def main(args):
     statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
     statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
     statics.cost_dict = costDataReader("EquipmentInventory.xlsx")
-    statics.priority_list = ["8 X 30 TABLES", "6 X 30 TABLES", "8 X 18 TABLES", "6 X 18 TABLES", "66 RROUND TABLES", "HIGH BOYS", "30 COCKTAIL ROUNDS",
+    statics.priority_list = ["8 X 30 TABLES", "6 X 30 TABLES", "8 X 18 TABLES", "6 X 18 TABLES", "66 ROUND TABLES", "HIGH BOYS", "30 COCKTAIL ROUNDS",
         "MEETING ROOM CHAIRS", "PODIUMS", "STAGE SKIRT DOLLIES", "TABLE SKIRT DOLLIES", "MEETING ROOM CHAIR DOLLIES",
         "66 ROUND TABLE DOLLIES", "FOLDING CHAIR DOLLIES (V STACK)", "FOLDING CHAIR DOLLIES (SQUARE STACK)", "HIGH BOY DOLLIES",
         "LONG TABLE DOLLIES", "SHORT TABLE DOLLIES", "STAND UP TABLE DOLLIES", "16RISERS 6 X 8", "24RISERS 6 X 8", "32RISERS 6 X 8", "(3) STEP UNIT WITH RAIL",
@@ -473,8 +473,11 @@ def main(args):
 
     # subgradient_ascent(mcnf, statics)
     subgradient_ascent(mcnf, statics, 100) # REDUCED ITERATION COUNT FOR TESTING
+    with open("output_cost.txt", "w") as f:
+        f.write(str(mcnf.unrelaxed_objective.getValue())) ## ACTUAL COST OF MOVEMENT!
+
     greedy_swap(mcnf, statics)
-    # printSolution(mcnf)
+    printSolution(mcnf)
 
 
 if __name__ == '__main__':
