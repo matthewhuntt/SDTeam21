@@ -44,15 +44,15 @@ def csvReader(filename):
         if filename == "ModelOutput.csv":
             for row in reader:
                 if any(row):
-                    dictionary[((row[0], row[1], row[2]), (row[3], row[4], row[5]), row[6])] = row[7]
+                    dictionary[((row[0], row[1], row[2]), (row[3], row[4], row[5]), row[6])] = float(row[7])
         if filename == "UnderCap.csv":
             for row in reader:
                 if any(row):
-                    dictionary[(row[0], row[1], row[2])] = row[3]
+                    dictionary[(row[0], row[1], row[2])] = float(row[3])
         if filename == "OverCap.csv":
             for row in reader:
                 if any(row):
-                    dictionary[(row[0], row[1], row[2])] = row[3]
+                    dictionary[(row[0], row[1], row[2])] = float(row[3])
     return dictionary
 
 def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
@@ -84,17 +84,23 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
             #below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
             sorted_insertion_list = sorted(insertion_cost_dict, key=lambda k: insertion_cost_dict[k])
             if len(sorted_insertion_list) > 0:
-                # print(sorted_insertion_list)
+                print(sorted_insertion_list)
             print ("Amount to move: " + str(over_cap[over_node]))
             for red_arc in sorted_insertion_list:
                 if float(over_cap[over_node]) > 0:
                     #print("Now trying " + str(red_arc))
                     blue_arc = (red_arc[0], (over_node[0], over_node[1], 'a'), commodity)
                     under_node = (red_arc[1][0], red_arc[1][1], 'b')
-                    swap_count = min(movement_arcs_dict[blue_arc], over_cap[over_node], abs(under_cap[under_node]))
-                    movement_arcs_dict[over_node] -= swap_count
-                    movement_arcs_dict[under_node] += swap_count
-                    if movement_arcs_dict[under_node] == 0:
+                    print(under_cap)
+                    a = under_cap[under_node]
+                    b = over_cap[over_node]
+                    swap_count = min(float(movement_arcs_dict[blue_arc]), float(over_cap[over_node]), abs(float(under_cap[under_node])))
+                    movement_arcs_dict[(red_arc[0], (over_node[0], over_node[1], 'a'), commodity)] -= swap_count
+                    over_cap[over_node] -= swap_count
+                    movement_arcs_dict[(red_arc[0], (under_node[0], under_node[1], 'a'), commodity)] += swap_count
+                    under_cap[under_node] += swap_count
+                    if movement_arcs_dict[(red_arc[0], (under_node[0], under_node[1], 'a'), commodity)] == 0:
+                        print(under_node)
                         del under_cap[under_node]
             if over_cap[over_node] == 0:
                 del over_cap[over_node]
@@ -114,6 +120,7 @@ def main(args):
     under_cap = csvReader('UnderCap.csv')
     over_cap = csvReader('OverCap.csv')
     greedy_swap(statics, movement_arcs_dict, under_cap, over_cap)
+    print("\a")
 
 if __name__ == '__main__':
     import sys
