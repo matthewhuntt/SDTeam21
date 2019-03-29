@@ -104,6 +104,9 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                             a = abs(float(over_cap[over_node])) # Volume over capacity still to move from over_node
                             b = abs(float(under_cap[under_node])) # Spare capacity in under_node
                             c = abs(float(movement_arcs_dict[blue_arc])) # Volume available to move from origin_node
+                            f.write("    Volume to move from over_node     | "+ str(a) + "\n")
+                            f.write("    Space available in under_node     | "+ str(b) + "\n")
+                            f.write("    Num of commodity from origin_node | "+ str(c) + "\n")
                             swap_count = min(a, b, c)
                             if swap_count > 0:
                                 print("Moved " + str(swap_count) + " from " + str(over_node) + " to " + str(under_node))
