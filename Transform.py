@@ -41,7 +41,14 @@ def currentStateReader(filename):
 
     inventory_dict = {}
     for row in inventory_rows:
-        inventory_dict[(row[0], row[1])] = row[2]
+        inventory_dict[(row[0], row[1])] = float(row[2])
+
+    total_inventory_dict = {}
+    for (room, commodity) in inventory_dict.keys():
+        if room in total_inventory_dict:
+            total_inventory_dict[commodity] += inventory_dict[(room, commodity)]
+        else:
+            total_inventory_dict[commodity] = inventory_dict[(room, commodity)]
 
     #Read in active room requirements
     #Notes:
@@ -70,13 +77,12 @@ def currentStateReader(filename):
     #for echelon in echelon_dict:
     #    echelon_dict[echelon] = datetimeReader(echelon_dict[echelon])
 
-    return(inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict)
+    return(inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict, total_inventory_dict)
 
 def costDataReader(filename):
     xl = pd.ExcelFile(filename)
     df = xl.parse("Cost Data", header=None)
     rows = df.values.tolist()
-    print(rows)
     cost_dict = {}
     for rowIndex in range (1, len(rows)):
         for columnIndex in range (1, len(rows)):
@@ -89,7 +95,7 @@ def datetimeReader(date):
     date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute))
     return date
 
-def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict, inventory_dict):
+def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict, inventory_dict, total_inventory_dict):
 
     #Creates 4 sets of arcs:
     #   movement_arc_dict       All b to a, room to room movement arcs (decisions)
@@ -134,8 +140,11 @@ def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict
 
     for room in allRoomList:
         for item in itemList:
-            utility_arc_dict[(("s", 0, "a"), (room, 0, "b"), item)] = (100000, 100000, 0)
             movement_arc_dict[((room, (len(echelon_dict.keys())), "b"), ("t", (len(echelon_dict.keys()) + 1), "a"), item)] = (0, 1000000000, 0)
+            if room in storageRoomList:
+                utility_arc_dict[(("s", 0, "a"), (room, 0, "b"), item)] = (inventory_dict[(room, item)], inventory_dict[(room, item)], 0)
+            else:
+                utility_arc_dict[(("s", 0, "a"), (room, 0, "b"), item)] = (0, 0, 0)
 
     #Create set of movement arcs for the first movement period
 
@@ -146,7 +155,7 @@ def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict
 
     rooms = len(allRoomList)
     for item in itemList:
-        utility_arc_dict[(("t", (len(echelon_dict.keys()) + 1), "a"), ("t", (len(echelon_dict.keys()) + 1), "b"), item)] = (100000 * rooms, 100000 * rooms, 0)
+        utility_arc_dict[(("t", (len(echelon_dict.keys()) + 1), "a"), ("t", (len(echelon_dict.keys()) + 1), "b"), item)] = (total_inventory_dict[item], total_inventory_dict[item], 0)
 
     return movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, allRoomList
 
@@ -196,7 +205,7 @@ def main(args):
 
     cost_dict = costDataReader("EquipmentInventory.xlsx")
     #print(cost_dict)
-    (inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict) = currentStateReader("EquipmentInventory.xlsx")
+    (inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict, total_inventory_dict) = currentStateReader("EquipmentInventory.xlsx")
     # print(inventory_dict)
     # print("\n\n")
     # print(requirement_dict)
@@ -207,11 +216,11 @@ def main(args):
     # print("\n\n")
     # print(item_list)
 
-    movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, allRoomList = constructor(echelon_dict, event_room_list, item_list, cost_dict, requirement_dict, inventory_dict)
-    arcDictWriter(movement_arc_dict, "MovementArcs.csv")
-    arcDictWriter(storage_cap_arc_dict, "StorageCapacityArcs.csv")
-    arcDictWriter(event_req_arc_dict, "EventRequirementArcs.csv")
-    arcDictWriter(utility_arc_dict, "UtilityArcs.csv")
+    movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, allRoomList = constructor(echelon_dict, event_room_list, item_list, cost_dict, requirement_dict, inventory_dict, total_inventory_dict)
+    # arcDictWriter(movement_arc_dict, "MovementArcs.csv")
+    # arcDictWriter(storage_cap_arc_dict, "StorageCapacityArcs.csv")
+    # arcDictWriter(event_req_arc_dict, "EventRequirementArcs.csv")
+    # arcDictWriter(utility_arc_dict, "UtilityArcs.csv")
     excelWriter(movement_arc_dict, "EquipmentInventory.xlsx", "Movement Arcs")
     excelWriter(storage_cap_arc_dict, "EquipmentInventory.xlsx", "Storage Room Arcs")
     excelWriter(event_req_arc_dict, "EquipmentInventory.xlsx", "Event Room Arcs")
@@ -219,10 +228,11 @@ def main(args):
     #auxiliaryWriter(room_dict, "EquipmentInventory.xlsx", "Room Dictionary")
     #print(eventRoomList)
     #print(itemList)
-    print((len(movement_arc_dict) + len(storage_cap_arc_dict) + len(event_req_arc_dict)))
-    print(len(allRoomList))
-    print(len(event_room_list))
-    print(len(echelon_dict.keys()))
+    # print((len(movement_arc_dict) + len(storage_cap_arc_dict) + len(event_req_arc_dict)))
+    # print(len(allRoomList))
+    # print(len(event_room_list))
+    # print(len(echelon_dict.keys()))
+    print("\a")
 
 if __name__ == '__main__':
     import sys
