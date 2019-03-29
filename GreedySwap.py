@@ -62,8 +62,11 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
         priority_list = statics.priority_list
         sorted_over_node_list = sorted(over_cap, key=lambda k: k[1])
         for over_node in sorted_over_node_list:
+            f.write("__________________________________\n")
+            f.write("Over Node: " + str(over_node) + "\n")
+            f.write("----------------------------------\n")
             print("__________________________________")
-            print("Now working on " + str(over_node))
+            print("Over Node: " + str(over_node))
             blue_arc_dict = {}
             for arc in movement_arcs_dict:
                 if arc[1] == over_node:
@@ -75,7 +78,8 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                             blue_arc_dict[commodity] = [arc]
 
             for commodity in priority_list:
-                print()
+                f.write("\n")
+                f.write("Now moving " + str(commodity) + "\n")
                 print("Now moving " + str(commodity))
                 red_arc_dict = {}
                 if commodity in blue_arc_dict:
@@ -96,21 +100,24 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
                     if float(over_cap[over_node]) > 0 and float(movement_arcs_dict[blue_arc]) > 0:
                         under_node = red_arc[1]
                         if under_node in under_cap:
-                            print("Now checking " + str(under_node))
+                            f.write("Now checking " + str(under_node) + "\n")
                             a = abs(float(over_cap[over_node])) # Volume over capacity still to move from over_node
                             b = abs(float(under_cap[under_node])) # Spare capacity in under_node
                             c = abs(float(movement_arcs_dict[blue_arc])) # Volume available to move from origin_node
                             swap_count = min(a, b, c)
                             if swap_count > 0:
                                 print("Moved " + str(swap_count) + " from " + str(over_node) + " to " + str(under_node))
+                                f.write("Moved " + str(swap_count) + " from " + str(over_node) + " to " + str(under_node) + "\n")
                                 movement_arcs_dict[(origin_node, over_node, commodity)] -= swap_count
                                 over_cap[over_node] -= swap_count
                                 movement_arcs_dict[(origin_node, under_node, commodity)] += swap_count
                                 under_cap[under_node] += swap_count
                                 if under_cap[under_node] == 0:
                                     print(str(under_node) + " is now full")
+                                    f.write(str(under_node) + " is now full" + "\n")
                                     del under_cap[under_node]
                                 print("Amount remaining: " + str(over_cap[over_node]))
+                                f.write("Amount remaining: " + str(over_cap[over_node]) + "\n")
                 if over_cap[over_node] == 0:
                     del over_cap[over_node]
 
