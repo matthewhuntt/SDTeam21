@@ -48,66 +48,79 @@ def csvReader(filename):
         if filename == "UnderCap.csv":
             for row in reader:
                 if any(row):
-                    dictionary[(row[0], row[1], row[2])] = float(row[3])
+                    dictionary[(row[0], row[1], "a")] = float(row[3])
         if filename == "OverCap.csv":
             for row in reader:
                 if any(row):
-                    dictionary[(row[0], row[1], row[2])] = float(row[3])
+                    dictionary[(row[0], row[1], "a")] = float(row[3])
     return dictionary
 
 def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap):
-    cost_dict = statics.cost_dict
-    # print(cost_dict)
-    # print()
-    priority_list = statics.priority_list
-    sorted_over_node_list = sorted(over_cap, key=lambda k: k[1])
-    # print(sorted_over_node_list)
-    for over_node in sorted_over_node_list:
-        print("Now working on node " + str(over_node))
-        incoming_dict = {}
-        for incoming_arc in movement_arcs_dict.keys():
-            if incoming_arc[1] == (over_node[0], over_node[1], 'a'):
-                if float(movement_arcs_dict[incoming_arc]) > 0:
-                    if incoming_arc[2] in incoming_dict.keys():
-                         incoming_dict[incoming_arc[2]].append(incoming_arc)
-                    else:
-                         incoming_dict[incoming_arc[2]] = [incoming_arc]
-        for commodity in priority_list:
-            #print("Now moving " + commodity)
-            insertion_cost_dict = {}
-            # print(incoming_dict.keys())
-            if commodity in incoming_dict.keys():
-                for incoming_arc in incoming_dict[commodity]:
-                    for under_node in under_cap.keys():
-                        cost = cost_dict[(incoming_arc[0][0], under_node[0])] - cost_dict[(incoming_arc[0][0], over_node[0])]
-                        insertion_cost_dict[(incoming_arc[0], under_node, commodity)] = cost
-            #below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
-            sorted_insertion_list = sorted(insertion_cost_dict, key=lambda k: insertion_cost_dict[k])
-            #if len(sorted_insertion_list) > 0:
-            #    print(sorted_insertion_list)
+    print("greedy_swap")
+    with open("log_file.txt","w") as f:
+        cost_dict = statics.cost_dict
+        # print(cost_dict)
+        # print()
+        priority_list = statics.priority_list
+        sorted_over_node_list = sorted(over_cap, key=lambda k: k[1])
+        for over_node in sorted_over_node_list:
+            print("Now working on node " + str(over_node))
+            incoming_dict = {}
+            for incoming_arc in movement_arcs_dict.keys():
+                if incoming_arc[1] == over_node:
+                    if float(movement_arcs_dict[incoming_arc]) > 0:
+                        if incoming_arc[2] in incoming_dict.keys():
+                             incoming_dict[incoming_arc[2]].append(incoming_arc)
+                        else:
+                             incoming_dict[incoming_arc[2]] = [incoming_arc]
+            for commodity in priority_list:
+                print("Now moving " + commodity)
+                insertion_cost_dict = {}
+                if commodity in incoming_dict:
+                    for incoming_arc in incoming_dict[commodity]:
+                        for under_node in under_cap:
+                            # cost to add red_arc to current under_node and remove blue arc to over_node
+                            origin_node = incoming_arc[0]
+                            cost = cost_dict[(origin_node[0], under_node[0])] - cost_dict[(origin_node[0], over_node[0])]
+                            insertion_cost_dict[(origin_node, under_node, commodity)] = cost
 
-            for red_arc in sorted_insertion_list:
-                if float(over_cap[over_node]) > 0:
-                    #print ("Amount to move: " + str(over_cap[over_node]))
+                #below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
+                sorted_insertion_list = sorted(insertion_cost_dict, key=lambda k: insertion_cost_dict[k])
+                #if len(sorted_insertion_list) > 0:
+                #    print(sorted_insertion_list)
 
-                    #print("Now trying " + str(red_arc))
-                    blue_arc = (red_arc[0], (over_node[0], over_node[1], 'a'), commodity)
-                    under_node = (red_arc[1][0], red_arc[1][1], 'b')
-                    #print(under_cap)
-                    if under_node in under_cap:
-                        a = under_cap[under_node]
-                        b = over_cap[over_node]
-                        swap_count = min(float(movement_arcs_dict[blue_arc]), float(over_cap[over_node]), abs(float(under_cap[under_node])))
-                        movement_arcs_dict[(red_arc[0], (over_node[0], over_node[1], 'a'), commodity)] -= swap_count
-                        over_cap[over_node] -= swap_count
-                        movement_arcs_dict[(red_arc[0], (under_node[0], under_node[1], 'a'), commodity)] += swap_count
-                        under_cap[under_node] += swap_count
-                        print("Moved " + str(swap_count) + " " + commodity + " from " + str(under_node) + " to " + str(over_node))
-                        if movement_arcs_dict[(red_arc[0], (under_node[0], under_node[1], 'a'), commodity)] == 0:
-                            #print(under_node)
-                            del under_cap[under_node]
-            if over_cap[over_node] == 0:
-                del over_cap[over_node]
+                for red_arc in sorted_insertion_list:
+                    origin_node = red_arc[0]
+                    blue_arc = (origin_node, over_node, commodity)
+                    if float(over_cap[over_node]) > 0 and float(movement_arcs_dict[blue_arc]) > 0:
+                        print ("Amount to move: " + str(over_cap[over_node]))
+                        print("Now trying " + str(red_arc))
+                        under_node = red_arc[1]
+                        #print(under_cap)
+                        if under_node in under_cap:
+                            a = abs(float(over_cap[over_node])) # Volume over capacity still to move from over_node
+                            b = abs(float(under_cap[under_node])) # Spare capacity in under_node
+                            c = abs(float(movement_arcs_dict[blue_arc])) # Volume available to move from origin_node
+                            swap_count = min(a, b, c)
+                            if swap_count > 0:
+                                movement_arcs_dict[(origin_node, over_node, commodity)] -= swap_count
+                                over_cap[over_node] -= swap_count
+                                movement_arcs_dict[(origin_node, under_node, commodity)] += swap_count
+                                under_cap[under_node] += swap_count
+                                if under_cap[under_node] == 0:
+                                    del under_cap[under_node]
+                                # if movement_arcs_dict[(origin_node, (under_node[0], under_node[1], 'a'), commodity)] == 0:
+                                #     del under_cap[under_node]
+                if over_cap[over_node] == 0:
+                    del over_cap[over_node]
+
+        f.write("\nOUTPUT:\n")
+        f.write("Remaining over nodes:\n")
+        for over_node in  over_cap:
+            f.write(": ".join([str(over_node), str(over_cap[over_node])])+ "\n")
+        f.write("Remaining under nodes:\n")
+        for under_node in  under_cap:
+            f.write(": ".join([str(under_node), str(under_cap[under_node])])+ "\n")
 
 def main(args):
     statics = DataStorage()
