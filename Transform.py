@@ -45,7 +45,7 @@ def currentStateReader(filename):
 
     total_inventory_dict = {}
     for (room, commodity) in inventory_dict.keys():
-        if room in total_inventory_dict:
+        if commodity in total_inventory_dict:
             total_inventory_dict[commodity] += inventory_dict[(room, commodity)]
         else:
             total_inventory_dict[commodity] = inventory_dict[(room, commodity)]
@@ -85,8 +85,9 @@ def costDataReader(filename):
     rows = df.values.tolist()
     cost_dict = {}
     for rowIndex in range (1, len(rows)):
-        for columnIndex in range (1, len(rows)):
+        for columnIndex in range (1, (rowIndex + 1)):
             cost_dict[(rows[rowIndex][0], rows[0][columnIndex])] = rows[rowIndex][columnIndex]
+            cost_dict[(rows[0][columnIndex], rows[rowIndex][0])] = rows[rowIndex][columnIndex]
     return cost_dict
 
 def datetimeReader(date):
@@ -206,6 +207,7 @@ def main(args):
     cost_dict = costDataReader("EquipmentInventory.xlsx")
     #print(cost_dict)
     (inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict, total_inventory_dict) = currentStateReader("EquipmentInventory.xlsx")
+    #print(total_inventory_dict)
     # print(inventory_dict)
     # print("\n\n")
     # print(requirement_dict)

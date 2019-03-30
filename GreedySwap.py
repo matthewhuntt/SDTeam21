@@ -33,8 +33,9 @@ def costDataReader(filename):
     rows = df.values.tolist()
     cost_dict = {}
     for rowIndex in range (1, len(rows)):
-        for columnIndex in range (1, len(rows)):
+        for columnIndex in range (1, (rowIndex + 1)):
             cost_dict[(rows[rowIndex][0], rows[0][columnIndex])] = rows[rowIndex][columnIndex]
+            cost_dict[(rows[0][columnIndex], rows[rowIndex][0])] = rows[rowIndex][columnIndex]
     return cost_dict
 
 def csvReader(filename):
@@ -202,8 +203,8 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
                 # f.write("__________________________________\n")
                 # f.write("Over Node: " + str(over_node) + "\n")
                 # f.write("----------------------------------\n")
-                # print("__________________________________")
-                # print("Over Node: " + str(over_node))
+                print("__________________________________")
+                print("Over Node: " + str(over_node))
 
                 blue_arc_dict = {}
                 for arc in movement_arcs_dict:
@@ -218,7 +219,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
                 for commodity in priority_list:
                     # f.write("\n")
                     # f.write("Now moving " + str(commodity) + "\n")
-                    # print("Now moving " + str(commodity))
+                    print("Now moving " + str(commodity))
 
                     red_arc_dict = {}
                     if commodity in blue_arc_dict:
@@ -235,6 +236,8 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
                     # below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
                     sorted_insertion_list = sorted(insertion_dict, key=lambda k: insertion_dict[k])
                     for red_arc in sorted_insertion_list:
+                        if insertion_dict[red_arc] < 0:
+                            print(str(red_arc) + ":  " + str(insertion_dict[red_arc]) + "\n")
                         # f.write("__________________________________\n")
                         # f.write("Red Arc: " +str(red_arc) + "\n")
                         origin_node = red_arc[0]
