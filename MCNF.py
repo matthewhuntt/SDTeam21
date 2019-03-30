@@ -107,6 +107,9 @@ def construct_network(arc_data, mcnf, statics):
     mcnf.commodityList = commodityList
 
 # Prints for debugging
+    # for x in range(mcnf.unrelaxed_objective.size()):
+    #     print(": ".join([str(mcnf.unrelaxed_objective.getVar(x).VarName), str(mcnf.unrelaxed_objective.getCoeff(x))]))
+    # print(mcnf.unrelaxed_objective.getConstant())
 #     for x in varDict:
 #         print(x.upper())
 #         for y in varDict[x]:
@@ -139,7 +142,7 @@ def flow_constraints(mcnf):
     # TODO: Clean and Document
     for commodity in mcnf.commodityList:
         for node in mcnf.nodeList:
-            if (node[0] != "s") and (node[0] != "t"):
+            if (node[0] != "s") and (node[0] != "t" or node[2] != 'b'):
                 inDict = {}
                 outDict = {}
                 if True: # TODO: Clean up the Search
@@ -472,7 +475,7 @@ def main(args):
     cap_constr_mapper(mcnf, statics)
 
     # subgradient_ascent(mcnf, statics)
-    subgradient_ascent(mcnf, statics, 100) # REDUCED ITERATION COUNT FOR TESTING
+    subgradient_ascent(mcnf, statics, 0) # REDUCED ITERATION COUNT FOR TESTING
     with open("output_cost.txt", "w") as f:
         f.write(str(mcnf.unrelaxed_objective.getValue())) ## ACTUAL COST OF MOVEMENT!
 
