@@ -197,92 +197,92 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
                         #         f.write("    Space available in under_node: " + str(under_cap[time][under_node]) + "\n")
                         #     else:
                         #         f.write(str(under_node) + " not in under_cap[time]" + "\n")
+        if any(time_echelons):
+            time = sorted(list(time_echelons))[-1]
+            for over_node in time_echelons[time]:
+                    # f.write("__________________________________\n")
+                    # f.write("Over Node: " + str(over_node) + "\n")
+                    # f.write("----------------------------------\n")
+                    print("__________________________________")
+                    print("Over Node: " + str(over_node))
 
-        time = sorted(list(time_echelons))[-1]
-        for over_node in time_echelons[time]:
-                # f.write("__________________________________\n")
-                # f.write("Over Node: " + str(over_node) + "\n")
-                # f.write("----------------------------------\n")
-                print("__________________________________")
-                print("Over Node: " + str(over_node))
+                    blue_arc_dict = {}
+                    for arc in movement_arcs_dict:
+                        tail, head, commodity = arc
+                        if head == over_node:
+                            if movement_arcs_dict[arc] > 0:
+                                if commodity in blue_arc_dict:
+                                    blue_arc_dict[commodity].append(arc)
+                                else:
+                                    blue_arc_dict[commodity] = [arc]
 
-                blue_arc_dict = {}
-                for arc in movement_arcs_dict:
-                    tail, head, commodity = arc
-                    if head == over_node:
-                        if movement_arcs_dict[arc] > 0:
-                            if commodity in blue_arc_dict:
-                                blue_arc_dict[commodity].append(arc)
-                            else:
-                                blue_arc_dict[commodity] = [arc]
+                    for commodity in priority_list:
+                        # f.write("\n")
+                        # f.write("Now moving " + str(commodity) + "\n")
+                        print("Now moving " + str(commodity))
 
-                for commodity in priority_list:
-                    # f.write("\n")
-                    # f.write("Now moving " + str(commodity) + "\n")
-                    print("Now moving " + str(commodity))
+                        red_arc_dict = {}
+                        if commodity in blue_arc_dict:
+                            for blue_arc in blue_arc_dict[commodity]:
+                                for under_node in under_cap[time]:
+                                    origin_node = blue_arc[0]
+                                    cost = cost_dict[(origin_node[0], under_node[0])] - cost_dict[(origin_node[0], over_node[0])]
+                                    red_arc_dict[(origin_node, under_node, commodity)] = cost
+                                    # cost to add red_arc to current under_node and remove blue arc to over_node
+                                    # All within a single commodity type!
 
-                    red_arc_dict = {}
-                    if commodity in blue_arc_dict:
-                        for blue_arc in blue_arc_dict[commodity]:
-                            for under_node in under_cap[time]:
-                                origin_node = blue_arc[0]
-                                cost = cost_dict[(origin_node[0], under_node[0])] - cost_dict[(origin_node[0], over_node[0])]
-                                red_arc_dict[(origin_node, under_node, commodity)] = cost
-                                # cost to add red_arc to current under_node and remove blue arc to over_node
-                                # All within a single commodity type!
+                        insertion_dict = red_arc_dict
 
-                    insertion_dict = red_arc_dict
+                        # below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
+                        sorted_insertion_list = sorted(insertion_dict, key=lambda k: insertion_dict[k])
+                        for red_arc in sorted_insertion_list:
+                            if insertion_dict[red_arc] < 0:
+                                print(str(red_arc) + ":  " + str(insertion_dict[red_arc]) + "\n")
+                            # f.write("__________________________________\n")
+                            # f.write("Red Arc: " +str(red_arc) + "\n")
+                            origin_node = red_arc[0]
+                            under_node = red_arc[1]
 
-                    # below func gives [(key_with_lowest_value), (key_with_second_lowest_value), ...]
-                    sorted_insertion_list = sorted(insertion_dict, key=lambda k: insertion_dict[k])
-                    for red_arc in sorted_insertion_list:
-                        if insertion_dict[red_arc] < 0:
-                            print(str(red_arc) + ":  " + str(insertion_dict[red_arc]) + "\n")
-                        # f.write("__________________________________\n")
-                        # f.write("Red Arc: " +str(red_arc) + "\n")
-                        origin_node = red_arc[0]
-                        under_node = red_arc[1]
+                            blue_arc = (origin_node, over_node, commodity)
 
-                        blue_arc = (origin_node, over_node, commodity)
+                            if (over_node in over_cap[time]) and (movement_arcs_dict[blue_arc] > 0):
+                                if under_node in under_cap[time]:
+                                    # f.write("----------------------------------\n")
+                                    # f.write("Rerouting " +str(commodity) + " from " + str(origin_node) + "\n")
+                                    # f.write("Now checking " + str(under_node) + "\n")
+                                    a = abs(over_cap[time][over_node]) # Volume over capacity still to move from over_node
+                                    b = abs(under_cap[time][under_node]) # Spare capacity in under_node
+                                    c = abs(movement_arcs_dict[blue_arc]) # Volume available to move from origin_node
+                                    swap_count = min(a, b, c)
+                                    # f.write("    Volume to move from over_node     | "+ str(a) + "\n")
+                                    # f.write("    Space available in under_node     | "+ str(b) + "\n")
+                                    # f.write("    Num of commodity from origin_node | "+ str(c) + "\n")
+                                    # f.write("    Num of commodity to destination_node | "+ str(d) + "\n")
+                                    if swap_count > 0:
+                                        # print("Moved " + str(swap_count) + " from " + str(over_node[0]) + " to " + str(under_node[0]) + " in t = " + str(over_node[1]))
+                                        # f.write("Moved " + str(swap_count) + " from " + str(over_node[0]) + " to " + str(under_node[0]) + " in t = " + str(over_node[1]) + "\n")
+                                        over_cap[time][over_node] -= swap_count
+                                        under_cap[time][under_node] += swap_count
 
-                        if (over_node in over_cap[time]) and (movement_arcs_dict[blue_arc] > 0):
-                            if under_node in under_cap[time]:
-                                # f.write("----------------------------------\n")
-                                # f.write("Rerouting " +str(commodity) + " from " + str(origin_node) + "\n")
-                                # f.write("Now checking " + str(under_node) + "\n")
-                                a = abs(over_cap[time][over_node]) # Volume over capacity still to move from over_node
-                                b = abs(under_cap[time][under_node]) # Spare capacity in under_node
-                                c = abs(movement_arcs_dict[blue_arc]) # Volume available to move from origin_node
-                                swap_count = min(a, b, c)
-                                # f.write("    Volume to move from over_node     | "+ str(a) + "\n")
-                                # f.write("    Space available in under_node     | "+ str(b) + "\n")
-                                # f.write("    Num of commodity from origin_node | "+ str(c) + "\n")
-                                # f.write("    Num of commodity to destination_node | "+ str(d) + "\n")
-                                if swap_count > 0:
-                                    # print("Moved " + str(swap_count) + " from " + str(over_node[0]) + " to " + str(under_node[0]) + " in t = " + str(over_node[1]))
-                                    # f.write("Moved " + str(swap_count) + " from " + str(over_node[0]) + " to " + str(under_node[0]) + " in t = " + str(over_node[1]) + "\n")
-                                    over_cap[time][over_node] -= swap_count
-                                    under_cap[time][under_node] += swap_count
+                                        movement_arcs_dict[blue_arc] -= swap_count
+                                        movement_arcs_dict[red_arc] += swap_count
 
-                                    movement_arcs_dict[blue_arc] -= swap_count
-                                    movement_arcs_dict[red_arc] += swap_count
+                                        model_cost += insertion_dict[red_arc] * swap_count
 
-                                    model_cost += insertion_dict[red_arc] * swap_count
+                                        # if movement_arcs_dict[(origin_node, over_node, commodity)] == 0:
+                                        #     print(str(commodity) + " from " + str(origin_node) + " is now depleted. Move to next Blue Arc.")
+                                        #     f.write(str(commodity) + " from " + str(origin_node) + " is now depleted. Move to next Blue Arc."+ "\n")
+                                        if under_cap[time][under_node] == 0:
+                                            # print(str(under_node) + " is now full")
+                                            # f.write(str(under_node) + " is now full" + "\n")
+                                            del under_cap[time][under_node]
 
-                                    # if movement_arcs_dict[(origin_node, over_node, commodity)] == 0:
-                                    #     print(str(commodity) + " from " + str(origin_node) + " is now depleted. Move to next Blue Arc.")
-                                    #     f.write(str(commodity) + " from " + str(origin_node) + " is now depleted. Move to next Blue Arc."+ "\n")
-                                    if under_cap[time][under_node] == 0:
-                                        # print(str(under_node) + " is now full")
-                                        # f.write(str(under_node) + " is now full" + "\n")
-                                        del under_cap[time][under_node]
+                                        # print("Amount remaining: " + str(over_cap[time][over_node]))
+                                        # f.write("Amount remaining: " + str(over_cap[time][over_node]) + "\n")
 
-                                    # print("Amount remaining: " + str(over_cap[time][over_node]))
-                                    # f.write("Amount remaining: " + str(over_cap[time][over_node]) + "\n")
-
-                                # f.write("----------------------------------\n")
-                            if over_cap[time][over_node] == 0:
-                                del over_cap[time][over_node]
+                                    # f.write("----------------------------------\n")
+                                if over_cap[time][over_node] == 0:
+                                    del over_cap[time][over_node]
 
 
 
