@@ -481,7 +481,7 @@ def main(args):
 
     greedy_swap(mcnf, statics)
     printSolution(mcnf)
-
+    print("\a")
 
 if __name__ == '__main__':
     import sys
