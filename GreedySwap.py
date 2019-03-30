@@ -259,7 +259,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
                                     # f.write("    Num of commodity from origin_node | "+ str(c) + "\n")
                                     # f.write("    Num of commodity to destination_node | "+ str(d) + "\n")
                                     if swap_count > 0:
-                                        # print("Moved " + str(swap_count) + " from " + str(over_node[0]) + " to " + str(under_node[0]) + " in t = " + str(over_node[1]))
+
                                         # f.write("Moved " + str(swap_count) + " from " + str(over_node[0]) + " to " + str(under_node[0]) + " in t = " + str(over_node[1]) + "\n")
                                         over_cap[time][over_node] -= swap_count
                                         under_cap[time][under_node] += swap_count
@@ -268,6 +268,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
                                         movement_arcs_dict[red_arc] += swap_count
 
                                         model_cost += insertion_dict[red_arc] * swap_count
+                                        print("Moved " + str(swap_count) + " from " + str(over_node[0]) + " to " + str(under_node[0]) + " in t = " + str(over_node[1]) + " at a cost of " + str(insertion_dict[red_arc] * swap_count))
 
                                         # if movement_arcs_dict[(origin_node, over_node, commodity)] == 0:
                                         #     print(str(commodity) + " from " + str(origin_node) + " is now depleted. Move to next Blue Arc.")
