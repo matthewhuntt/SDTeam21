@@ -175,8 +175,7 @@ def cap_constr_mapper(mcnf, statics):
             if node[0][0] == 'S' and int(node[1]) != 0 and node[2] == 'b':
                 vol_node_i = LinExpr()
                 for commodity in mcnf.commodityList:
-                    for arc_type in mcnf.varDict:
-                        for arc in mcnf.varDict[arc_type]:
+                    for arc in mcnf.varDict["storage_cap"]:
                     # TODO - EFFICIENCY: Can cut by only looking
                     # at (a->b for that node for all coms)
                     # we want:
@@ -184,8 +183,8 @@ def cap_constr_mapper(mcnf, statics):
                     #            k is element of commodidtyList}
                     # potentially cutting the # of items to
                     # iterate through
-                            if arc[1] == node and arc[2] == commodity:
-                                vol_node_i.add(mcnf.varDict[arc_type][arc], commodity_vols[commodity])
+                        if arc[1] == node and arc[2] == commodity:
+                            vol_node_i.add(mcnf.varDict["storage_cap"][arc], commodity_vols[commodity])
                 vol_node_i.add(-room_caps[str(node[0])])
                 cap_constrs[node] = vol_node_i
     mcnf.cap_constrs = cap_constrs
