@@ -147,6 +147,7 @@ def flow_constraints(mcnf):
             if (node[0] != "s") and (node[0] != "t" or node[2] != 'b'):
                 inDict = {}
                 outDict = {}
+
                 for arc_type in mcnf.varDict:
                     for arc in mcnf.varDict[arc_type]:
                         if arc[2] == commodity:
@@ -154,9 +155,20 @@ def flow_constraints(mcnf):
                                 inDict[arc] = mcnf.varDict[arc_type][arc]
                             elif (node == arc[0]):
                                 outDict[arc] = mcnf.varDict[arc_type][arc]
+                if node == ('S1', 0, 'b'):
+                    print()
+                    print("Node: " + str(node))
+                    print("inDict:")
+                    print(inDict)
+                    print("outDict")
+                    print(outDict)
                 inDict = tupledict(inDict)
                 outDict = tupledict(outDict)
                 mcnf.m.addConstr(inDict.sum() == outDict.sum())
+    print("Cost of  (('S1', 0, 'b'), ('S1', 1, 'a'), 'SETS OF STAGE STEPS')")
+    print(mcnf.varDict['movement'][(('S1', 0, 'b'), ('S1', 1, 'a'), 'SETS OF STAGE STEPS')].Obj)
+    print("Cost of  (('S1', 0, 'b'), ('S3', 1, 'a'), 'SETS OF STAGE STEPS')")
+    print(mcnf.varDict['movement'][(('S1', 0, 'b'), ('S3', 1, 'a'), 'SETS OF STAGE STEPS')].Obj)
 
 
 def cap_constr_mapper(mcnf, statics):
@@ -475,8 +487,16 @@ def main(args):
 
     flow_constraints(mcnf)
     cap_constr_mapper(mcnf, statics)
+
+
     mcnf.m.optimize()
 
+    constraints = mcnf.m.getConstrs()
+    #print(constraints)
+    print(len(constraints))
+    print(constraints[0].RHS)
+    #for constraint in constraints:
+    mcnf.m.write("mcnf.lp")
     # subgradient_ascent(mcnf, statics)
     subgradient_ascent(mcnf, statics, 100) # REDUCED ITERATION COUNT FOR TESTING
     with open("output_cost.txt", "w") as f:
