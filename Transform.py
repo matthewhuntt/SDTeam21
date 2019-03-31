@@ -5,6 +5,8 @@ import datetime
 import pandas as pd
 from openpyxl import load_workbook
 
+excel_filename = "EquipmentInventory.xlsx"
+
 def setupDataReader(filename):
     with open(filename, "r") as f:
         reader = csv.reader(f)
@@ -50,6 +52,14 @@ def currentStateReader(filename):
         else:
             total_inventory_dict[commodity] = inventory_dict[(room, commodity)]
 
+    xl = pd.ExcelFile(filename)
+    storage_df = xl.parse("Storage Rooms")
+    storage_rows = storage_df.values.tolist()
+
+    storage_cap_dict = {}
+    for row in storage_rows:
+        storage_cap_dict[row[0]] = float(row[3])
+
     #Read in active room requirements
     #Notes:
     #   Echelons are based on set up start times
@@ -62,6 +72,7 @@ def currentStateReader(filename):
     echelon_dict_reverse = {}
     event_room_list = []
     item_list = []
+    item_dict = {}
     requirement_dict = {}
     for row in requirement_rows:
         if row[2] not in echelon_dict.values():
@@ -77,7 +88,15 @@ def currentStateReader(filename):
     #for echelon in echelon_dict:
     #    echelon_dict[echelon] = datetimeReader(echelon_dict[echelon])
 
-    return(inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict, total_inventory_dict)
+    xl = pd.ExcelFile(filename)
+    items_df = xl.parse("Commodities")
+    items_rows = items_df.values.tolist()
+
+    for row in items_rows:
+        if row[0] in item_list:
+            item_dict[row[0]] = float(row[1])
+
+    return(inventory_dict, echelon_dict, event_room_list, item_dict, requirement_dict, total_inventory_dict, storage_cap_dict)
 
 def costDataReader(filename):
     xl = pd.ExcelFile(filename)
@@ -96,7 +115,7 @@ def datetimeReader(date):
     date = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute))
     return date
 
-def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict, inventory_dict, total_inventory_dict):
+def constructor(echelon_dict, eventRoomList, item_dict, costDict, requirementDict, inventory_dict, total_inventory_dict, storage_cap_dict):
 
     #Creates 4 sets of arcs:
     #   movement_arc_dict       All b to a, room to room movement arcs (decisions)
@@ -115,6 +134,7 @@ def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict
     storage_cap_arc_dict = {}
     event_req_arc_dict = {}
     utility_arc_dict = {}
+    itemList = item_dict.keys()
 
     #Create general set of arcs for all time echelons other than the first and
     #last
@@ -131,11 +151,12 @@ def constructor(echelon_dict, eventRoomList, itemList, costDict, requirementDict
                                     event_req_arc_dict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (qty, qty, 0)
                             if roomI in storageRoomList:
                                 for item in itemList:
-                                    storage_cap_arc_dict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (0, 100000000, 0)
+                                    ub = int(storage_cap_dict[roomI] / item_dict[item])
+                                    storage_cap_arc_dict[((roomI, echelon, "a"),(roomJ, echelon, "b"), item)] = (0, ub, 0)
                     if ab == "b":
                         if echelon != len(echelon_dict.keys()):
                             for item in itemList:
-                                movement_arc_dict[((roomI, echelon, "b"), (roomJ, echelon + 1, "a"), item)] = (0, 100000000, costDict[(roomDict[roomI], roomDict[roomJ])])
+                                movement_arc_dict[((roomI, echelon, "b"), (roomJ, echelon + 1, "a"), item)] = (0, 100000000, costDict[(roomI, roomJ)])
 
     #Create set of arcs for inital starting conditions from s node to each room
 
@@ -179,9 +200,9 @@ def excelWriter(arcDict, filename, sheet_name):
             arc[1][2], arc[2], arcDict[arc][0], arcDict[arc][1], arcDict[arc][2]])
 
     #Writes to master excel sheet
-    book = load_workbook("EquipmentInventory.xlsx")
+    book = load_workbook(excel_filename)
     df = pd.DataFrame(arcList)
-    writer = pd.ExcelWriter("EquipmentInventory.xlsx", engine='openpyxl')
+    writer = pd.ExcelWriter(excel_filename, engine='openpyxl')
     writer.book = book
     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
     df.to_excel(writer, sheet_name=sheet_name, index=False, index_label=False, header=False)
@@ -204,9 +225,9 @@ def excelWriter(arcDict, filename, sheet_name):
 
 def main(args):
 
-    cost_dict = costDataReader("EquipmentInventory.xlsx")
+    cost_dict = costDataReader(excel_filename)
     #print(cost_dict)
-    (inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict, total_inventory_dict) = currentStateReader("EquipmentInventory.xlsx")
+    (inventory_dict, echelon_dict, event_room_list, item_list, requirement_dict, total_inventory_dict, storage_cap_dict) = currentStateReader(excel_filename)
     #print(total_inventory_dict)
     # print(inventory_dict)
     # print("\n\n")
@@ -218,15 +239,15 @@ def main(args):
     # print("\n\n")
     # print(item_list)
 
-    movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, allRoomList = constructor(echelon_dict, event_room_list, item_list, cost_dict, requirement_dict, inventory_dict, total_inventory_dict)
+    movement_arc_dict, storage_cap_arc_dict, event_req_arc_dict, utility_arc_dict, allRoomList = constructor(echelon_dict, event_room_list, item_list, cost_dict, requirement_dict, inventory_dict, total_inventory_dict, storage_cap_dict)
     # arcDictWriter(movement_arc_dict, "MovementArcs.csv")
     # arcDictWriter(storage_cap_arc_dict, "StorageCapacityArcs.csv")
     # arcDictWriter(event_req_arc_dict, "EventRequirementArcs.csv")
     # arcDictWriter(utility_arc_dict, "UtilityArcs.csv")
-    excelWriter(movement_arc_dict, "EquipmentInventory.xlsx", "Movement Arcs")
-    excelWriter(storage_cap_arc_dict, "EquipmentInventory.xlsx", "Storage Room Arcs")
-    excelWriter(event_req_arc_dict, "EquipmentInventory.xlsx", "Event Room Arcs")
-    excelWriter(utility_arc_dict, "EquipmentInventory.xlsx", "Utility Arcs")
+    excelWriter(movement_arc_dict, excel_filename, "Movement Arcs")
+    excelWriter(storage_cap_arc_dict, excel_filename, "Storage Room Arcs")
+    excelWriter(event_req_arc_dict, excel_filename, "Event Room Arcs")
+    excelWriter(utility_arc_dict, excel_filename, "Utility Arcs")
     #auxiliaryWriter(room_dict, "EquipmentInventory.xlsx", "Room Dictionary")
     #print(eventRoomList)
     #print(itemList)

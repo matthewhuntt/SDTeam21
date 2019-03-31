@@ -71,7 +71,7 @@ def construct_network(arc_data, mcnf, statics):
     for arc_type in arc_data:
         var_partition = {}
         arc_rows = arc_data[arc_type]
-        for row in arc_rows[1:]: # Removes Header
+        for row in arc_rows: # Removes Header
             tail = (row[0], row[1], row[2]) # Origin Node
             head = (row[3], row[4], row[5]) # Destination Node
             commodity = row[6]              # Equipment Type
@@ -140,21 +140,23 @@ def flow_constraints(mcnf):
     '''
 
     # TODO: Clean and Document
+    print(mcnf.varDict['event_req'])
+    print(mcnf.nodeList)
     for commodity in mcnf.commodityList:
         for node in mcnf.nodeList:
             if (node[0] != "s") and (node[0] != "t" or node[2] != 'b'):
                 inDict = {}
                 outDict = {}
-                if True: # TODO: Clean up the Search
-                    for arc_type in mcnf.varDict:
-                        for arc in mcnf.varDict[arc_type]:
-                            if (arc[1] == node) and (arc[2] == commodity):
+                for arc_type in mcnf.varDict:
+                    for arc in mcnf.varDict[arc_type]:
+                        if arc[2] == commodity:
+                            if (arc[1] == node):
                                 inDict[arc] = mcnf.varDict[arc_type][arc]
-                            elif (arc[0] == node) and (arc[2] == commodity):
+                            elif (node == arc[0]):
                                 outDict[arc] = mcnf.varDict[arc_type][arc]
-                    inDict = tupledict(inDict)
-                    outDict = tupledict(outDict)
-                    mcnf.m.addConstr(inDict.sum() == outDict.sum())
+                inDict = tupledict(inDict)
+                outDict = tupledict(outDict)
+                mcnf.m.addConstr(inDict.sum() == outDict.sum())
 
 
 def cap_constr_mapper(mcnf, statics):
@@ -418,6 +420,7 @@ def printSolution(mcnf):
         print('No solution;', m.status)
 
 def main(args):
+    excel_filename = 'EquipmentInventory.xlsx'
     # statics is used to store immutable data from the
     # system, including:
     #   - Storage Room Capacity Dictionary | roomCapDict
@@ -427,9 +430,9 @@ def main(args):
     #
     # Only used for reference.
     statics = DataStorage()
-    statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
-    statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
-    statics.cost_dict = costDataReader("EquipmentInventory.xlsx")
+    statics.room_caps = excelReader(excel_filename, "Storage Rooms")
+    statics.commodity_vols = excelReader(excel_filename, "Commodities")
+    statics.cost_dict = costDataReader(excel_filename)
     statics.priority_list = ["8 X 30 TABLES", "6 X 30 TABLES", "8 X 18 TABLES", "6 X 18 TABLES", "66 ROUND TABLES", "HIGH BOYS", "30 COCKTAIL ROUNDS",
         "MEETING ROOM CHAIRS", "PODIUMS", "STAGE SKIRT DOLLIES", "TABLE SKIRT DOLLIES", "MEETING ROOM CHAIR DOLLIES",
         "66 ROUND TABLE DOLLIES", "FOLDING CHAIR DOLLIES (V STACK)", "FOLDING CHAIR DOLLIES (SQUARE STACK)", "HIGH BOY DOLLIES",
@@ -462,10 +465,10 @@ def main(args):
     #
     # To be updated as the state of the model changes.
     arc_data = {}
-    arc_data["utility"] = arcReader("EquipmentInventory.xlsx", "Utility Arcs")
-    arc_data["movement"] = arcReader("EquipmentInventory.xlsx", "Movement Arcs")
-    arc_data["event_req"] = arcReader("EquipmentInventory.xlsx", "Event Room Arcs")
-    arc_data["storage_cap"] = arcReader("EquipmentInventory.xlsx", "Storage Room Arcs")
+    arc_data["utility"] = arcReader(excel_filename, "Utility Arcs")
+    arc_data["movement"] = arcReader(excel_filename, "Movement Arcs")
+    arc_data["event_req"] = arcReader(excel_filename, "Event Room Arcs")
+    arc_data["storage_cap"] = arcReader(excel_filename, "Storage Room Arcs")
 
     mcnf = DataStorage()
     mcnf.m = Model("m")
@@ -473,9 +476,10 @@ def main(args):
 
     flow_constraints(mcnf)
     cap_constr_mapper(mcnf, statics)
+    mcnf.m.optimize()
 
     # subgradient_ascent(mcnf, statics)
-    subgradient_ascent(mcnf, statics, 0) # REDUCED ITERATION COUNT FOR TESTING
+    subgradient_ascent(mcnf, statics, 100) # REDUCED ITERATION COUNT FOR TESTING
     with open("output_cost.txt", "w") as f:
         f.write(str(mcnf.unrelaxed_objective.getValue())) ## ACTUAL COST OF MOVEMENT!
 

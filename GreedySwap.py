@@ -125,7 +125,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
                             for under_node in under_cap[time]:
                                 destination_node = green_arc[1]
                                 cost = cost_dict[(under_node[0], destination_node[0])] - cost_dict[(over_node[0], destination_node[0])]
-                                orange_arc_dict[((under_node[0], time, 'b'), destination, commodity)] = cost
+                                orange_arc_dict[((under_node[0], time, 'b'), destination_node, commodity)] = cost
 
                     insertion_dict = {}
                     for red in red_arc_dict:
@@ -142,8 +142,9 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
                         destination_node = orange_arc[1]
 
                         blue_arc = (origin_node, over_node, commodity)
-                        green_arc = (over_node, destination_node, commodity)
-
+                        green_arc = ((over_node[0], over_node[1], 'b'), destination_node, commodity)
+                        print(movement_arcs_dict[blue_arc])
+                        print(movement_arcs_dict[green_arc])
                         if (over_node in over_cap[time]) and (movement_arcs_dict[blue_arc] > 0) and (movement_arcs_dict[green_arc] > 0):
                             if under_node in under_cap[time]:
                                 # f.write("----------------------------------\n")
@@ -314,10 +315,11 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
         #                 f.write(str(x) + ": " + str(movement_arcs_dict[x]) + "\n")
 
 def main(args):
+    excel_filename = "EquipmentInventory.xlsx"
     statics = DataStorage()
-    statics.room_caps = excelReader("EquipmentInventory.xlsx", "Storage Rooms")
-    statics.commodity_vols = excelReader("EquipmentInventory.xlsx", "Commodities")
-    statics.cost_dict = costDataReader("EquipmentInventory.xlsx")
+    statics.room_caps = excelReader(excel_filename, "Storage Rooms")
+    statics.commodity_vols = excelReader(excel_filename, "Commodities")
+    statics.cost_dict = costDataReader(excel_filename)
     statics.priority_list = ["8 X 30 TABLES", "6 X 30 TABLES", "8 X 18 TABLES", "6 X 18 TABLES", "66 ROUND TABLES", "HIGH BOYS", "30 COCKTAIL ROUNDS",
         "MEETING ROOM CHAIRS", "PODIUMS", "STAGE SKIRT DOLLIES", "TABLE SKIRT DOLLIES", "MEETING ROOM CHAIR DOLLIES",
         "66 ROUND TABLE DOLLIES", "FOLDING CHAIR DOLLIES (V STACK)", "FOLDING CHAIR DOLLIES (SQUARE STACK)", "HIGH BOY DOLLIES",
@@ -329,6 +331,7 @@ def main(args):
     over_cap = csvReader('OverCap.csv')
     with open("output_cost.txt") as f:
         model_cost = float(f.readline())
+        print(model_cost)
     greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost)
     print("\a")
 
