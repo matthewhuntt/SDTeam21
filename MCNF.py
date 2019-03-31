@@ -419,7 +419,7 @@ def printSolution(mcnf):
         print('No solution;', m.status)
 
 def main(args):
-    excel_filename = 'EquipmentInventory.xlsx'
+    excel_filename = 'EquipmentInventoryTest2.xlsx'
     # statics is used to store immutable data from the
     # system, including:
     #   - Storage Room Capacity Dictionary | roomCapDict

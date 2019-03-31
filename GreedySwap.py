@@ -315,7 +315,7 @@ def greedy_swap(statics, movement_arcs_dict, under_cap, over_cap, model_cost):
         #                 f.write(str(x) + ": " + str(movement_arcs_dict[x]) + "\n")
 
 def main(args):
-    excel_filename = "EquipmentInventory.xlsx"
+    excel_filename = "EquipmentInventoryTest2.xlsx"
     statics = DataStorage()
     statics.room_caps = excelReader(excel_filename, "Storage Rooms")
     statics.commodity_vols = excelReader(excel_filename, "Commodities")
